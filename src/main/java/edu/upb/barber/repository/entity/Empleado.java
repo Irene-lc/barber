@@ -2,14 +2,7 @@ package edu.upb.barber.repository.entity;
 
 import java.math.BigDecimal;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
@@ -59,6 +52,10 @@ public class Empleado extends BaseAuditEntity {
 
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
 
     public String getId() { return id; }
     public Usuario getUsuario() { return usuario; }

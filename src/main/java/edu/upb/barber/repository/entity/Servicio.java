@@ -42,7 +42,7 @@ public class Servicio extends BaseAuditEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "destinatario", nullable = false, length = 20)
-    private TipoDestinatarioServicio destinatario = TipoDestinatarioServicio.AMBOS;
+    private TipoDestinatarioServicio destinatario;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "categoria", length = 40)
@@ -72,4 +72,11 @@ public class Servicio extends BaseAuditEntity {
     public void setPrecioBase(BigDecimal precioBase) { this.precioBase = precioBase; }
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
+    public TipoDestinatarioServicio getDestinatario() {
+        return destinatario;
+    }
+
+    public void setDestinatario(TipoDestinatarioServicio destinatario) {
+        this.destinatario = destinatario;
+    }
 }
