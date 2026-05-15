@@ -1,0 +1,59 @@
+package edu.upb.barber.repository.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.UuidGenerator;
+
+@Entity
+@Table(
+    name = "mascota",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_mascota_cliente_nombre", columnNames = {"cliente_id", "nombre"})
+    }
+)
+public class Mascota extends BaseAuditEntity {
+
+    @Id
+    @UuidGenerator
+    @Column(name = "id", nullable = false, updatable = false, length = 36)
+    private String id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cliente_id", nullable = false)
+    private Cliente cliente;
+
+    @Column(name = "nombre", nullable = false, length = 120)
+    private String nombre;
+
+    @Column(name = "especie", length = 80)
+    private String especie;
+
+    @Column(name = "raza", length = 100)
+    private String raza;
+
+    @Column(name = "notas_especiales", columnDefinition = "TEXT")
+    private String notasEspeciales;
+
+    @Column(name = "activa", nullable = false)
+    private boolean activa = true;
+
+    public String getId() { return id; }
+    public Cliente getCliente() { return cliente; }
+    public void setCliente(Cliente cliente) { this.cliente = cliente; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getEspecie() { return especie; }
+    public void setEspecie(String especie) { this.especie = especie; }
+    public String getRaza() { return raza; }
+    public void setRaza(String raza) { this.raza = raza; }
+    public String getNotasEspeciales() { return notasEspeciales; }
+    public void setNotasEspeciales(String notasEspeciales) { this.notasEspeciales = notasEspeciales; }
+    public boolean isActiva() { return activa; }
+    public void setActiva(boolean activa) { this.activa = activa; }
+}
