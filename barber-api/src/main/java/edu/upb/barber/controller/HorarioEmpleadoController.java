@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.HorarioEmpleadoRequest;
-import edu.upb.barber.dto.response.HorarioEmpleadoResponse;
+import edu.upb.barber.repository.dto.request.HorarioEmpleadoRequest;
+import edu.upb.barber.repository.dto.response.HorarioEmpleadoResponse;
 import edu.upb.barber.service.HorarioEmpleadoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

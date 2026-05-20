@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.AgendaEventoEmpleadoRequest;
-import edu.upb.barber.dto.response.AgendaEventoEmpleadoResponse;
+import edu.upb.barber.repository.dto.request.AgendaEventoEmpleadoRequest;
+import edu.upb.barber.repository.dto.response.AgendaEventoEmpleadoResponse;
 import edu.upb.barber.repository.AgendaEventoEmpleadoRepository;
 import edu.upb.barber.repository.AgendaEventoRepository;
 import edu.upb.barber.repository.EmpleadoRepository;

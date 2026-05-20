@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.PermisoAgendaRequest;
-import edu.upb.barber.dto.response.PermisoAgendaResponse;
+import edu.upb.barber.repository.dto.request.PermisoAgendaRequest;
+import edu.upb.barber.repository.dto.response.PermisoAgendaResponse;
 import edu.upb.barber.repository.EmpleadoRepository;
 import edu.upb.barber.repository.PermisoAgendaRepository;
 import edu.upb.barber.repository.SucursalRepository;

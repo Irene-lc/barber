@@ -1,9 +1,10 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.EmpresaRequest;
-import edu.upb.barber.dto.response.EmpresaResponse;
+import edu.upb.barber.repository.dto.request.EmpresaRequest;
+import edu.upb.barber.repository.dto.response.EmpresaResponse;
 import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.entity.Empresa;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,8 @@ public class EmpresaService {
 
     @Transactional(readOnly = true)
     public List<EmpresaResponse> listar() {
-        return this.repository.listarEmpresas().stream().map(EmpresaResponse::fromEntity).toList();
+//        return this.repository.listarEmpresas().stream().map(EmpresaResponse::fromEntity).toList();
+        return this.repository.listarEmpresas();
     }
 
     @Transactional(readOnly = true)
@@ -30,17 +32,17 @@ public class EmpresaService {
     }
 
     @Transactional
-    public void guardar(EmpresaRequest dto) throws Exception {
-        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+    public void guardar(EmpresaRequest empresa) {
+        if (empresa.getNombre() == null || empresa.getNombre().isBlank()) {
             log.error("Error al guardar empresa, el campo nombre es nulo");
-            throw new Exception("El campo nombre es null");
+            throw new OperationException("El campo nombre es null");
         }
-        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+        if (empresa.getEmail() == null || empresa.getEmail().isBlank()) {
             log.error("Error al guardar empresa, el campo email es nulo");
-            throw new Exception("El campo email es null");
+            throw new OperationException("El campo email es null");
         }
         Empresa entity = new Empresa();
-        mapearDesdeDto(dto, entity);
+        mapearDesdeDto(empresa, entity);
         this.repository.save(entity);
     }
 

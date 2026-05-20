@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.ComisionRequest;
-import edu.upb.barber.dto.response.ComisionResponse;
+import edu.upb.barber.repository.dto.request.ComisionRequest;
+import edu.upb.barber.repository.dto.response.ComisionResponse;
 import edu.upb.barber.repository.ComisionRepository;
 import edu.upb.barber.repository.EmpleadoRepository;
 import edu.upb.barber.repository.VentaDetalleRepository;

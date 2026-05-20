@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.HistorialCambioRequest;
-import edu.upb.barber.dto.response.HistorialCambioResponse;
+import edu.upb.barber.repository.dto.request.HistorialCambioRequest;
+import edu.upb.barber.repository.dto.response.HistorialCambioResponse;
 import edu.upb.barber.service.HistorialCambioService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

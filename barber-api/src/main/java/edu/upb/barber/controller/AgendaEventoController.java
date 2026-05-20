@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.AgendaEventoRequest;
-import edu.upb.barber.dto.response.AgendaEventoResponse;
+import edu.upb.barber.repository.dto.request.AgendaEventoRequest;
+import edu.upb.barber.repository.dto.response.AgendaEventoResponse;
 import edu.upb.barber.service.AgendaEventoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

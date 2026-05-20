@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.ComboServicioRequest;
-import edu.upb.barber.dto.response.ComboServicioResponse;
+import edu.upb.barber.repository.dto.request.ComboServicioRequest;
+import edu.upb.barber.repository.dto.response.ComboServicioResponse;
 import edu.upb.barber.repository.ComboServicioRepository;
 import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.entity.ComboServicio;

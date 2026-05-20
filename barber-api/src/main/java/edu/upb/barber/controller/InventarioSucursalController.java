@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.InventarioSucursalRequest;
-import edu.upb.barber.dto.response.InventarioSucursalResponse;
+import edu.upb.barber.repository.dto.request.InventarioSucursalRequest;
+import edu.upb.barber.repository.dto.response.InventarioSucursalResponse;
 import edu.upb.barber.service.InventarioSucursalService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

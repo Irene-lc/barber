@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.PagoRequest;
-import edu.upb.barber.dto.response.PagoResponse;
+import edu.upb.barber.repository.dto.request.PagoRequest;
+import edu.upb.barber.repository.dto.response.PagoResponse;
 import edu.upb.barber.service.PagoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

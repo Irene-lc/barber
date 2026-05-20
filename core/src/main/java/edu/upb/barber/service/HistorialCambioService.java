@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.HistorialCambioRequest;
-import edu.upb.barber.dto.response.HistorialCambioResponse;
+import edu.upb.barber.repository.dto.request.HistorialCambioRequest;
+import edu.upb.barber.repository.dto.response.HistorialCambioResponse;
 import edu.upb.barber.repository.AgendaEventoRepository;
 import edu.upb.barber.repository.HistorialCambioRepository;
 import edu.upb.barber.repository.UsuarioRepository;

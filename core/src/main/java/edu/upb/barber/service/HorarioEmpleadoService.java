@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.HorarioEmpleadoRequest;
-import edu.upb.barber.dto.response.HorarioEmpleadoResponse;
+import edu.upb.barber.repository.dto.request.HorarioEmpleadoRequest;
+import edu.upb.barber.repository.dto.response.HorarioEmpleadoResponse;
 import edu.upb.barber.repository.EmpleadoRepository;
 import edu.upb.barber.repository.HorarioEmpleadoRepository;
 import edu.upb.barber.repository.SucursalRepository;

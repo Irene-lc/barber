@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.ComisionRequest;
-import edu.upb.barber.dto.response.ComisionResponse;
+import edu.upb.barber.repository.dto.request.ComisionRequest;
+import edu.upb.barber.repository.dto.response.ComisionResponse;
 import edu.upb.barber.service.ComisionService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

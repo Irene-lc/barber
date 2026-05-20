@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.EmpleadoRequest;
-import edu.upb.barber.dto.response.EmpleadoResponse;
+import edu.upb.barber.repository.dto.request.EmpleadoRequest;
+import edu.upb.barber.repository.dto.response.EmpleadoResponse;
 import edu.upb.barber.repository.EmpleadoRepository;
 import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.UsuarioRepository;

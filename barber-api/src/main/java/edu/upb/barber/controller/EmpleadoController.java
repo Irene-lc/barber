@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.EmpleadoRequest;
-import edu.upb.barber.dto.response.EmpleadoResponse;
+import edu.upb.barber.repository.dto.request.EmpleadoRequest;
+import edu.upb.barber.repository.dto.response.EmpleadoResponse;
 import edu.upb.barber.service.EmpleadoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

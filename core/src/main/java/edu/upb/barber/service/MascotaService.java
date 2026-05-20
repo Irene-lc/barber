@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.MascotaRequest;
-import edu.upb.barber.dto.response.MascotaResponse;
+import edu.upb.barber.repository.dto.request.MascotaRequest;
+import edu.upb.barber.repository.dto.response.MascotaResponse;
 import edu.upb.barber.repository.ClienteRepository;
 import edu.upb.barber.repository.MascotaRepository;
 import edu.upb.barber.repository.entity.Mascota;

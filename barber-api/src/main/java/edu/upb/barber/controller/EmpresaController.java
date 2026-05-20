@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.EmpresaRequest;
-import edu.upb.barber.dto.response.EmpresaResponse;
+import edu.upb.barber.repository.dto.request.EmpresaRequest;
+import edu.upb.barber.repository.dto.response.EmpresaResponse;
 import edu.upb.barber.service.EmpresaService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +39,9 @@ public class EmpresaController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> guardar(@RequestBody EmpresaRequest dto) {
+    public ResponseEntity<Void> guardar(@RequestBody EmpresaRequest empresa) {
         try {
-            service.guardar(dto);
+            service.guardar(empresa);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("Error al guardar empresa", e);
@@ -50,7 +50,9 @@ public class EmpresaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> actualizar(@PathVariable String id, @RequestBody EmpresaRequest dto) {
+    public ResponseEntity<Void> actualizar(
+            @PathVariable String id,
+            @RequestBody EmpresaRequest dto) {
         try {
             service.actualizar(id, dto);
             return ResponseEntity.ok().build();

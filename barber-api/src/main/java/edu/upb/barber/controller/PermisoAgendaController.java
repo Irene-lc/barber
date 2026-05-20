@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
-import edu.upb.barber.dto.request.PermisoAgendaRequest;
-import edu.upb.barber.dto.response.PermisoAgendaResponse;
+import edu.upb.barber.repository.dto.request.PermisoAgendaRequest;
+import edu.upb.barber.repository.dto.response.PermisoAgendaResponse;
 import edu.upb.barber.service.PermisoAgendaService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

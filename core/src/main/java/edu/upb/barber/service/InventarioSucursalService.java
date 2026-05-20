@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.InventarioSucursalRequest;
-import edu.upb.barber.dto.response.InventarioSucursalResponse;
+import edu.upb.barber.repository.dto.request.InventarioSucursalRequest;
+import edu.upb.barber.repository.dto.response.InventarioSucursalResponse;
 import edu.upb.barber.repository.InventarioSucursalRepository;
 import edu.upb.barber.repository.ProductoRepository;
 import edu.upb.barber.repository.SucursalRepository;

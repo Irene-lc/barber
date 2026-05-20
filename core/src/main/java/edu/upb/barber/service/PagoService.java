@@ -1,7 +1,7 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.dto.request.PagoRequest;
-import edu.upb.barber.dto.response.PagoResponse;
+import edu.upb.barber.repository.dto.request.PagoRequest;
+import edu.upb.barber.repository.dto.response.PagoResponse;
 import edu.upb.barber.repository.PagoRepository;
 import edu.upb.barber.repository.UsuarioRepository;
 import edu.upb.barber.repository.VentaRepository;
