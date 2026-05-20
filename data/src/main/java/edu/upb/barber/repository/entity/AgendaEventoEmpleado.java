@@ -24,7 +24,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_agenda_evento_empleado", columnNames = {"agenda_evento_id", "empleado_id"})
     }
 )
-public class AgendaEventoEmpleado extends BaseAuditEntity {
+public class AgendaEventoEmpleado extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -32,11 +32,11 @@ public class AgendaEventoEmpleado extends BaseAuditEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "agenda_evento_id", nullable = false)
+    @JoinColumn(name = "agenda_evento_id", referencedColumnName = "id", nullable = false)
     private AgendaEvento agendaEvento;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "empleado_id", nullable = false)
+    @JoinColumn(name = "empleado_id", referencedColumnName = "id", nullable = false)
     private Empleado empleado;
 
     @Enumerated(EnumType.STRING)

@@ -20,7 +20,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Getter
 @Setter
 @Table(name = "venta_detalle")
-public class VentaDetalle extends BaseAuditEntity {
+public class VentaDetalle extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -28,7 +28,7 @@ public class VentaDetalle extends BaseAuditEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "venta_id", nullable = false)
+    @JoinColumn(name = "venta_id", referencedColumnName = "id", nullable = false)
     private Venta venta;
 
     @Enumerated(EnumType.STRING)
@@ -36,19 +36,19 @@ public class VentaDetalle extends BaseAuditEntity {
     private TipoItemVenta tipoItem;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "servicio_id")
+    @JoinColumn(name = "servicio_id", referencedColumnName = "id")
     private Servicio servicio;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "producto_id")
+    @JoinColumn(name = "producto_id", referencedColumnName = "id")
     private Producto producto;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "combo_servicio_id")
+    @JoinColumn(name = "combo_servicio_id", referencedColumnName = "id")
     private ComboServicio comboServicio;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empleado_id")
+    @JoinColumn(name = "empleado_id", referencedColumnName = "id")
     private Empleado empleado;
 
     @Column(name = "cantidad", nullable = false)

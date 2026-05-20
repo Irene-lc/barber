@@ -21,7 +21,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_inventario_producto_sucursal", columnNames = {"producto_id", "sucursal_id"})
     }
 )
-public class InventarioSucursal extends BaseAuditEntity {
+public class InventarioSucursal extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -29,11 +29,11 @@ public class InventarioSucursal extends BaseAuditEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "producto_id", nullable = false)
+    @JoinColumn(name = "producto_id", referencedColumnName = "id", nullable = false)
     private Producto producto;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sucursal_id", nullable = false)
+    @JoinColumn(name = "sucursal_id", referencedColumnName = "id", nullable = false)
     private Sucursal sucursal;
 
     @Column(name = "stock_actual", nullable = false)

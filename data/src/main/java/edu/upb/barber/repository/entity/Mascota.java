@@ -21,7 +21,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_mascota_cliente_nombre", columnNames = {"cliente_id", "nombre"})
     }
 )
-public class Mascota extends BaseAuditEntity {
+public class Mascota extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -29,7 +29,7 @@ public class Mascota extends BaseAuditEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "cliente_id", nullable = false)
+    @JoinColumn(name = "cliente_id", referencedColumnName = "id", nullable = false)
     private Cliente cliente;
 
     @Column(name = "nombre", nullable = false, length = 120)

@@ -1,5 +1,6 @@
 package edu.upb.barber.repository.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -12,7 +13,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Getter
 @Setter
 @Table(name = "empresa")
-public class Empresa extends BaseAuditEntity {
+public class Empresa extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -22,6 +23,7 @@ public class Empresa extends BaseAuditEntity {
     @Column(name = "nombre", nullable = false, length = 120)
     private String nombre;
 
+    @JsonProperty("razon_social")
     @Column(name = "razon_social", nullable = false, length = 150)
     private String razonSocial;
 

@@ -20,7 +20,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Getter
 @Setter
 @Table(name = "horario_empleado")
-public class HorarioEmpleado extends BaseAuditEntity {
+public class HorarioEmpleado extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -28,11 +28,11 @@ public class HorarioEmpleado extends BaseAuditEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "empleado_id", nullable = false)
+    @JoinColumn(name = "empleado_id", referencedColumnName = "id", nullable = false)
     private Empleado empleado;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sucursal_id", nullable = false)
+    @JoinColumn(name = "sucursal_id", referencedColumnName = "id", nullable = false)
     private Sucursal sucursal;
 
     @Enumerated(EnumType.STRING)

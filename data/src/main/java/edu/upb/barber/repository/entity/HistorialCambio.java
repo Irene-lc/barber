@@ -26,11 +26,11 @@ public class HistorialCambio {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "agenda_evento_id", nullable = false)
+    @JoinColumn(name = "agenda_evento_id", referencedColumnName = "id", nullable = false)
     private AgendaEvento agendaEvento;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "modificado_por_usuario_id")
+    @JoinColumn(name = "modificado_por_usuario_id", referencedColumnName = "id")
     private Usuario modificadoPorUsuario;
 
     @Column(name = "campo_modificado", nullable = false, length = 100)

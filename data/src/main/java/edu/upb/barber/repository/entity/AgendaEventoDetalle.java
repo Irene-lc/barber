@@ -17,7 +17,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Setter
 @Getter
 @Table(name = "agenda_evento_detalle")
-public class AgendaEventoDetalle extends BaseAuditEntity {
+public class AgendaEventoDetalle extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -25,15 +25,15 @@ public class AgendaEventoDetalle extends BaseAuditEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "agenda_evento_id", nullable = false)
+    @JoinColumn(name = "agenda_evento_id", referencedColumnName = "id", nullable = false)
     private AgendaEvento agendaEvento;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "servicio_id")
+    @JoinColumn(name = "servicio_id", referencedColumnName = "id")
     private Servicio servicio;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "combo_servicio_id")
+    @JoinColumn(name = "combo_servicio_id", referencedColumnName = "id")
     private ComboServicio comboServicio;
 
     @Column(name = "duracion_estimada_minutos", nullable = false)

@@ -20,7 +20,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Setter
 @Getter
 @Table(name = "venta")
-public class Venta extends BaseAuditEntity {
+public class Venta extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -28,19 +28,19 @@ public class Venta extends BaseAuditEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sucursal_id", nullable = false)
+    @JoinColumn(name = "sucursal_id", referencedColumnName = "id", nullable = false)
     private Sucursal sucursal;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente_id")
+    @JoinColumn(name = "cliente_id", referencedColumnName = "id")
     private Cliente cliente;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agenda_evento_id")
+    @JoinColumn(name = "agenda_evento_id", referencedColumnName = "id")
     private AgendaEvento agendaEvento;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "registrado_por_usuario_id")
+    @JoinColumn(name = "registrado_por_usuario_id", referencedColumnName = "id")
     private Usuario registradoPorUsuario;
 
     @Column(name = "subtotal", nullable = false, precision = 12, scale = 2)
