@@ -2,6 +2,7 @@ package edu.upb.springsito.repository.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.UuidGenerator;
@@ -11,6 +12,7 @@ import org.hibernate.annotations.UuidGenerator;
 public class Empresa extends BaseAuditEntity {
 
     @Id
+    @GeneratedValue
     @UuidGenerator
     @Column(name = "id", nullable = false, updatable = false, length = 36)
     private String id;
