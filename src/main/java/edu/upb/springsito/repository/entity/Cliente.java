@@ -27,6 +27,12 @@ public class Cliente extends BaseAuditEntity {
     @Column(name = "documento", length = 40)
     private String documento;
 
+    @Column(name = "nombre_usuario", length = 80)
+    private String nombreUsuario;
+
+    @Column(name = "contrasena", length = 255)
+    private String contrasena;
+
     public String getId() { return id; }
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
@@ -36,4 +42,8 @@ public class Cliente extends BaseAuditEntity {
     public void setEmail(String email) { this.email = email; }
     public String getDocumento() { return documento; }
     public void setDocumento(String documento) { this.documento = documento; }
+    public String getNombreUsuario() { return nombreUsuario; }
+    public void setNombreUsuario(String nombreUsuario) { this.nombreUsuario = nombreUsuario; }
+    public String getContrasena() { return contrasena; }
+    public void setContrasena(String contrasena) { this.contrasena = contrasena; }
 }

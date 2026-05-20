@@ -29,6 +29,12 @@ public class Empleado extends BaseAuditEntity {
     @Column(name = "cargo", nullable = false, length = 80)
     private String cargo;
 
+    @Column(name = "nombre_usuario", length = 80)
+    private String nombreUsuario;
+
+    @Column(name = "contrasena", length = 255)
+    private String contrasena;
+
     @Column(name = "porcentaje_comision", precision = 5, scale = 2)
     private BigDecimal porcentajeComision;
 
@@ -47,6 +53,10 @@ public class Empleado extends BaseAuditEntity {
     public void setEmail(String email) { this.email = email; }
     public String getCargo() { return cargo; }
     public void setCargo(String cargo) { this.cargo = cargo; }
+    public String getNombreUsuario() { return nombreUsuario; }
+    public void setNombreUsuario(String nombreUsuario) { this.nombreUsuario = nombreUsuario; }
+    public String getContrasena() { return contrasena; }
+    public void setContrasena(String contrasena) { this.contrasena = contrasena; }
     public BigDecimal getPorcentajeComision() { return porcentajeComision; }
     public void setPorcentajeComision(BigDecimal porcentajeComision) { this.porcentajeComision = porcentajeComision; }
     public BigDecimal getPagoFijoMensual() { return pagoFijoMensual; }

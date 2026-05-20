@@ -128,6 +128,8 @@ public class SpringsitoApplication {
         cliente.setTelefono("72000010");
         cliente.setEmail("carlos.rojas@gmail.com");
         cliente.setDocumento("CI-6543210");
+        cliente.setNombreUsuario("carlos.rojas");
+        cliente.setContrasena("cliente123");
         cliente = clienteRepository.save(cliente);
 
         Empleado empleado = new Empleado();
@@ -135,6 +137,8 @@ public class SpringsitoApplication {
         empleado.setTelefono("72000002");
         empleado.setEmail("diego@urbancut.bo");
         empleado.setCargo("Barbero Senior");
+        empleado.setNombreUsuario("diego.fernandez");
+        empleado.setContrasena("empleado123");
         empleado.setPorcentajeComision(new BigDecimal("18.50"));
         empleado.setPagoFijoMensual(new BigDecimal("3200.00"));
         empleado.setActivo(true);
