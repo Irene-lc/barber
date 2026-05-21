@@ -22,7 +22,7 @@ import org.hibernate.annotations.UuidGenerator;
 )
 @Getter
 @Setter
-public class Cliente extends BaseAuditEntity {
+public class Cliente extends AuditableEntity {
 
     @Id
     @UuidGenerator

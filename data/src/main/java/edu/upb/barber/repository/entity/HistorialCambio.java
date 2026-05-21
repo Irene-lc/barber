@@ -10,8 +10,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "historial_cambio")
 public class HistorialCambio {
@@ -46,16 +50,4 @@ public class HistorialCambio {
         this.modificadoEn = OffsetDateTime.now();
     }
 
-    public String getId() { return id; }
-    public AgendaEvento getAgendaEvento() { return agendaEvento; }
-    public void setAgendaEvento(AgendaEvento agendaEvento) { this.agendaEvento = agendaEvento; }
-    public Usuario getModificadoPorUsuario() { return modificadoPorUsuario; }
-    public void setModificadoPorUsuario(Usuario modificadoPorUsuario) { this.modificadoPorUsuario = modificadoPorUsuario; }
-    public String getCampoModificado() { return campoModificado; }
-    public void setCampoModificado(String campoModificado) { this.campoModificado = campoModificado; }
-    public String getValorAnterior() { return valorAnterior; }
-    public void setValorAnterior(String valorAnterior) { this.valorAnterior = valorAnterior; }
-    public String getValorNuevo() { return valorNuevo; }
-    public void setValorNuevo(String valorNuevo) { this.valorNuevo = valorNuevo; }
-    public OffsetDateTime getModificadoEn() { return modificadoEn; }
 }

@@ -10,8 +10,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(
     name = "combo_servicio",
@@ -19,7 +23,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_combo_empresa_nombre", columnNames = {"empresa_id", "nombre"})
     }
 )
-public class ComboServicio extends BaseAuditEntity {
+public class ComboServicio extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -45,17 +49,4 @@ public class ComboServicio extends BaseAuditEntity {
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 
-    public String getId() { return id; }
-    public Empresa getEmpresa() { return empresa; }
-    public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
-    public BigDecimal getPrecio() { return precio; }
-    public void setPrecio(BigDecimal precio) { this.precio = precio; }
-    public int getDuracionMinutos() { return duracionMinutos; }
-    public void setDuracionMinutos(int duracionMinutos) { this.duracionMinutos = duracionMinutos; }
-    public boolean isActivo() { return activo; }
-    public void setActivo(boolean activo) { this.activo = activo; }
 }

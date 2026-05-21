@@ -4,11 +4,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "empresa")
-public class Empresa extends BaseAuditEntity {
+public class Empresa extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -33,17 +37,4 @@ public class Empresa extends BaseAuditEntity {
     @Column(name = "activa", nullable = false)
     private boolean activa = true;
 
-    public String getId() { return id; }
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public String getRazonSocial() { return razonSocial; }
-    public void setRazonSocial(String razonSocial) { this.razonSocial = razonSocial; }
-    public String getNit() { return nit; }
-    public void setNit(String nit) { this.nit = nit; }
-    public String getTelefono() { return telefono; }
-    public void setTelefono(String telefono) { this.telefono = telefono; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public boolean isActiva() { return activa; }
-    public void setActiva(boolean activa) { this.activa = activa; }
 }

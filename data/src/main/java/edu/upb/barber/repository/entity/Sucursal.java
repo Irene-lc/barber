@@ -8,8 +8,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(
     name = "sucursal",
@@ -17,7 +21,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_sucursal_empresa_nombre", columnNames = {"empresa_id", "nombre"})
     }
 )
-public class Sucursal extends BaseAuditEntity {
+public class Sucursal extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -37,23 +41,8 @@ public class Sucursal extends BaseAuditEntity {
     @Column(name = "telefono", length = 30)
     private String telefono;
 
-    @Column(name = "zona_horaria", nullable = false, length = 60)
-    private String zonaHoraria = "America/La_Paz";
-
     @Column(name = "activa", nullable = false)
     private boolean activa = true;
 
-    public String getId() { return id; }
-    public Empresa getEmpresa() { return empresa; }
-    public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public String getDireccion() { return direccion; }
-    public void setDireccion(String direccion) { this.direccion = direccion; }
-    public String getTelefono() { return telefono; }
-    public void setTelefono(String telefono) { this.telefono = telefono; }
-    public String getZonaHoraria() { return zonaHoraria; }
-    public void setZonaHoraria(String zonaHoraria) { this.zonaHoraria = zonaHoraria; }
-    public boolean isActiva() { return activa; }
-    public void setActiva(boolean activa) { this.activa = activa; }
+
 }

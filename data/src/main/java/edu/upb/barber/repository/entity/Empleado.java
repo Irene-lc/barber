@@ -16,7 +16,7 @@ import org.hibernate.annotations.UuidGenerator;
 )
 @Getter
 @Setter
-public class Empleado extends BaseAuditEntity {
+public class Empleado extends AuditableEntity {
 
     @Id
     @UuidGenerator

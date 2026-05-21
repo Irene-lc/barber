@@ -12,11 +12,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "horario_empleado")
-public class HorarioEmpleado extends BaseAuditEntity {
+public class HorarioEmpleado extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -44,17 +48,4 @@ public class HorarioEmpleado extends BaseAuditEntity {
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 
-    public String getId() { return id; }
-    public Empleado getEmpleado() { return empleado; }
-    public void setEmpleado(Empleado empleado) { this.empleado = empleado; }
-    public Sucursal getSucursal() { return sucursal; }
-    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
-    public DiaSemana getDiaSemana() { return diaSemana; }
-    public void setDiaSemana(DiaSemana diaSemana) { this.diaSemana = diaSemana; }
-    public LocalTime getHoraInicio() { return horaInicio; }
-    public void setHoraInicio(LocalTime horaInicio) { this.horaInicio = horaInicio; }
-    public LocalTime getHoraFin() { return horaFin; }
-    public void setHoraFin(LocalTime horaFin) { this.horaFin = horaFin; }
-    public boolean isActivo() { return activo; }
-    public void setActivo(boolean activo) { this.activo = activo; }
 }

@@ -10,8 +10,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(
     name = "producto",
@@ -19,7 +23,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_producto_empresa_nombre", columnNames = {"empresa_id", "nombre"})
     }
 )
-public class Producto extends BaseAuditEntity {
+public class Producto extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -42,15 +46,4 @@ public class Producto extends BaseAuditEntity {
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 
-    public String getId() { return id; }
-    public Empresa getEmpresa() { return empresa; }
-    public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
-    public BigDecimal getPrecioVenta() { return precioVenta; }
-    public void setPrecioVenta(BigDecimal precioVenta) { this.precioVenta = precioVenta; }
-    public boolean isActivo() { return activo; }
-    public void setActivo(boolean activo) { this.activo = activo; }
 }

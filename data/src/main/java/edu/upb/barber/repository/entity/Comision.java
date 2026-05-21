@@ -11,8 +11,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(
     name = "comision",
@@ -20,7 +24,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_comision_venta_detalle_empleado", columnNames = {"venta_detalle_id", "empleado_id"})
     }
 )
-public class Comision extends BaseAuditEntity {
+public class Comision extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -47,17 +51,4 @@ public class Comision extends BaseAuditEntity {
     @Column(name = "liquidada_en")
     private OffsetDateTime liquidadaEn;
 
-    public String getId() { return id; }
-    public VentaDetalle getVentaDetalle() { return ventaDetalle; }
-    public void setVentaDetalle(VentaDetalle ventaDetalle) { this.ventaDetalle = ventaDetalle; }
-    public Empleado getEmpleado() { return empleado; }
-    public void setEmpleado(Empleado empleado) { this.empleado = empleado; }
-    public BigDecimal getPorcentajeAplicado() { return porcentajeAplicado; }
-    public void setPorcentajeAplicado(BigDecimal porcentajeAplicado) { this.porcentajeAplicado = porcentajeAplicado; }
-    public BigDecimal getMontoComision() { return montoComision; }
-    public void setMontoComision(BigDecimal montoComision) { this.montoComision = montoComision; }
-    public boolean isLiquidada() { return liquidada; }
-    public void setLiquidada(boolean liquidada) { this.liquidada = liquidada; }
-    public OffsetDateTime getLiquidadaEn() { return liquidadaEn; }
-    public void setLiquidadaEn(OffsetDateTime liquidadaEn) { this.liquidadaEn = liquidadaEn; }
 }

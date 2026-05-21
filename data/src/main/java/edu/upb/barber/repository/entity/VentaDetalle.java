@@ -12,11 +12,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "venta_detalle")
-public class VentaDetalle extends BaseAuditEntity {
+public class VentaDetalle extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -62,27 +66,4 @@ public class VentaDetalle extends BaseAuditEntity {
     @Column(name = "notas", columnDefinition = "TEXT")
     private String notas;
 
-    public String getId() { return id; }
-    public Venta getVenta() { return venta; }
-    public void setVenta(Venta venta) { this.venta = venta; }
-    public TipoItemVenta getTipoItem() { return tipoItem; }
-    public void setTipoItem(TipoItemVenta tipoItem) { this.tipoItem = tipoItem; }
-    public Servicio getServicio() { return servicio; }
-    public void setServicio(Servicio servicio) { this.servicio = servicio; }
-    public Producto getProducto() { return producto; }
-    public void setProducto(Producto producto) { this.producto = producto; }
-    public ComboServicio getComboServicio() { return comboServicio; }
-    public void setComboServicio(ComboServicio comboServicio) { this.comboServicio = comboServicio; }
-    public Empleado getEmpleado() { return empleado; }
-    public void setEmpleado(Empleado empleado) { this.empleado = empleado; }
-    public int getCantidad() { return cantidad; }
-    public void setCantidad(int cantidad) { this.cantidad = cantidad; }
-    public BigDecimal getPrecioUnitario() { return precioUnitario; }
-    public void setPrecioUnitario(BigDecimal precioUnitario) { this.precioUnitario = precioUnitario; }
-    public BigDecimal getDescuento() { return descuento; }
-    public void setDescuento(BigDecimal descuento) { this.descuento = descuento; }
-    public BigDecimal getSubtotal() { return subtotal; }
-    public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
-    public String getNotas() { return notas; }
-    public void setNotas(String notas) { this.notas = notas; }
 }

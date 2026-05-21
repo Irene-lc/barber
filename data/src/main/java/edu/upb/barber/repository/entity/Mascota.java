@@ -8,8 +8,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(
     name = "mascota",
@@ -17,7 +21,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_mascota_cliente_nombre", columnNames = {"cliente_id", "nombre"})
     }
 )
-public class Mascota extends BaseAuditEntity {
+public class Mascota extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -43,17 +47,4 @@ public class Mascota extends BaseAuditEntity {
     @Column(name = "activa", nullable = false)
     private boolean activa = true;
 
-    public String getId() { return id; }
-    public Cliente getCliente() { return cliente; }
-    public void setCliente(Cliente cliente) { this.cliente = cliente; }
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public String getEspecie() { return especie; }
-    public void setEspecie(String especie) { this.especie = especie; }
-    public String getRaza() { return raza; }
-    public void setRaza(String raza) { this.raza = raza; }
-    public String getNotasEspeciales() { return notasEspeciales; }
-    public void setNotasEspeciales(String notasEspeciales) { this.notasEspeciales = notasEspeciales; }
-    public boolean isActiva() { return activa; }
-    public void setActiva(boolean activa) { this.activa = activa; }
 }

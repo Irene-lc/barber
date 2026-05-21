@@ -8,8 +8,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(
     name = "combo_servicio_detalle",
@@ -17,7 +21,7 @@ import org.hibernate.annotations.UuidGenerator;
         @UniqueConstraint(name = "uk_combo_servicio", columnNames = {"combo_servicio_id", "servicio_id"})
     }
 )
-public class ComboServicioDetalle extends BaseAuditEntity {
+public class ComboServicioDetalle extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -35,11 +39,4 @@ public class ComboServicioDetalle extends BaseAuditEntity {
     @Column(name = "orden_ejecucion", nullable = false)
     private int ordenEjecucion = 1;
 
-    public String getId() { return id; }
-    public ComboServicio getComboServicio() { return comboServicio; }
-    public void setComboServicio(ComboServicio comboServicio) { this.comboServicio = comboServicio; }
-    public Servicio getServicio() { return servicio; }
-    public void setServicio(Servicio servicio) { this.servicio = servicio; }
-    public int getOrdenEjecucion() { return ordenEjecucion; }
-    public void setOrdenEjecucion(int ordenEjecucion) { this.ordenEjecucion = ordenEjecucion; }
 }

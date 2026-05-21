@@ -21,7 +21,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "agenda_evento")
 @Getter
 @Setter
-public class AgendaEvento extends BaseAuditEntity {
+public class AgendaEvento extends AuditableEntity {
 
     @Id
     @UuidGenerator

@@ -14,11 +14,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "pago")
-public class Pago extends BaseAuditEntity {
+public class Pago extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -47,17 +51,4 @@ public class Pago extends BaseAuditEntity {
     @JoinColumn(name = "registrado_por_usuario_id")
     private Usuario registradoPorUsuario;
 
-    public String getId() { return id; }
-    public Venta getVenta() { return venta; }
-    public void setVenta(Venta venta) { this.venta = venta; }
-    public BigDecimal getMonto() { return monto; }
-    public void setMonto(BigDecimal monto) { this.monto = monto; }
-    public MetodoPago getMetodoPago() { return metodoPago; }
-    public void setMetodoPago(MetodoPago metodoPago) { this.metodoPago = metodoPago; }
-    public EstadoPago getEstadoPago() { return estadoPago; }
-    public void setEstadoPago(EstadoPago estadoPago) { this.estadoPago = estadoPago; }
-    public OffsetDateTime getPagadoEn() { return pagadoEn; }
-    public void setPagadoEn(OffsetDateTime pagadoEn) { this.pagadoEn = pagadoEn; }
-    public Usuario getRegistradoPorUsuario() { return registradoPorUsuario; }
-    public void setRegistradoPorUsuario(Usuario registradoPorUsuario) { this.registradoPorUsuario = registradoPorUsuario; }
-}
+    }
