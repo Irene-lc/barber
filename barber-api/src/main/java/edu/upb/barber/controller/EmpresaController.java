@@ -58,5 +58,16 @@ public class EmpresaController {
                     .build();
         }
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> actualizar(@PathVariable("id") String empresaId,
+                                           @RequestBody EmpresaRequestDto empresa) {
+        try {
+            this.empresaService.update(empresaId, empresa);
+            return ResponseEntity.ok().build();
+        }catch (Exception e) {
+            log.error("Error al actualizar empresa", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
 }

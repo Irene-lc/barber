@@ -81,7 +81,6 @@ public class EmpresaService {
                 empresaRequestDto.getEmail());
 
         if (empresaRequestDto.getActiva() != null) {
-
             empresa.setActiva(
                     empresaRequestDto.getActiva());
         }
@@ -102,6 +101,31 @@ public class EmpresaService {
     public Optional<Empresa> findById(String id) {
 
         return empresaRepository.findById(id);
+    }
+
+    @Transactional
+    public void update(String empresaId, EmpresaRequestDto empresa) throws Exception {
+        if(StringUtil.isNullOrEmpty(empresa.getNombre())) {
+            log.error("Error al guardar empresa. El campo nombre null");
+            throw new Exception("El campo nombre es null");
+        }
+
+        if(StringUtil.isNullOrEmpty(empresa.getNit())) {
+            log.error("Error al guardar empresa. El campo Descripcion null");
+            throw new Exception("El campo Descripcion es null");
+        }
+
+        this.empresaRepository.actualizarEmpresa(empresaId, empresa.getNombre(), empresa.getNit(), empresa.getRazonSocial());
+        Optional<Empresa> optionalEmpresa = this.empresaRepository.findById(empresaId);
+        if (optionalEmpresa.isEmpty()) {
+            throw new Exception("No existe ek enoresa conn el id: " + empresaId);
+        }
+        Empresa empresa1 = optionalEmpresa.get();
+        empresa1.setActiva(empresa.getActiva());
+        empresa1.setNit(empresa.getNit());
+        empresa1.setRazonSocial(empresa.getRazonSocial());
+        empresa1.setNombre(empresa.getNombre());
+        this.empresaRepository.save(empresa1);
     }
 
 }
