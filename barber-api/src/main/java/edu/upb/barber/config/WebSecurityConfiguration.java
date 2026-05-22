@@ -44,6 +44,7 @@ public class WebSecurityConfiguration implements WebMvcConfigurer, Serializable 
                                         .requestMatchers(HttpMethod.POST, "/api/v1/empresas").permitAll()
                                         .requestMatchers(HttpMethod.GET, "/api/v1/empresas").permitAll()
                                         .requestMatchers(HttpMethod.POST, "/api/v1/usuarios").permitAll()
+                                        .requestMatchers(HttpMethod.GET, "/api/v1/usuarios").permitAll()
                                         .requestMatchers("/api/v1/auth/**").permitAll()
 
                                         .requestMatchers("/error").anonymous() // <----- Fix
