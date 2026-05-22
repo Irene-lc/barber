@@ -30,7 +30,7 @@ public class UsuarioController {
     }
 
     @PostMapping
-//    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
     public ResponseEntity<Void> guardar(
             @RequestBody UsuarioRequestDto usuario
     ) {
