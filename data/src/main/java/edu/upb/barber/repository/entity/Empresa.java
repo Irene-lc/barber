@@ -34,7 +34,7 @@ public class Empresa extends AuditableEntity {
     @Column(name = "email", length = 120)
     private String email;
 
-    @Column(name = "activo", nullable = false)
-    private boolean activo = true;
+    @Column(name = "activa", nullable = false)
+    private boolean activa = true;
 
 }
