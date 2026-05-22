@@ -1,0 +1,7 @@
+package edu.upb.barber.repository;
+
+import edu.upb.barber.repository.entity.InventarioSucursal;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface InventarioSucursalRepository extends JpaRepository<InventarioSucursal, String> {
+}

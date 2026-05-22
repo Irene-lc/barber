@@ -1,0 +1,51 @@
+package edu.upb.barber.repository.entity;
+
+import java.time.LocalTime;
+
+import edu.upb.barber.repository.entity.enums.DiaSemana;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+
+@Getter
+@Setter
+@Entity
+@Table(
+        name = "horario_empleado",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_horario_empleado",
+                        columnNames = {"empleado_id", "sucursal_id", "dia_semana", "hora_inicio", "hora_fin"}
+                )
+        }
+)
+public class HorarioEmpleado extends AuditableEntity {
+
+    @Id
+    @UuidGenerator
+    @Column(name = "id", nullable = false, updatable = false, length = 36)
+    private String id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "empleado_id", nullable = false)
+    private Empleado empleado;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "sucursal_id", nullable = false)
+    private Sucursal sucursal;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dia_semana", nullable = false, length = 20)
+    private DiaSemana diaSemana;
+
+    @Column(name = "hora_inicio", nullable = false)
+    private LocalTime horaInicio;
+
+    @Column(name = "hora_fin", nullable = false)
+    private LocalTime horaFin;
+
+    @Column(name = "activo", nullable = false)
+    private boolean activo = true;
+
+}
