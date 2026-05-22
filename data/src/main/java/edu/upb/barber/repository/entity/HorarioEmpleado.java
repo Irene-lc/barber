@@ -3,15 +3,7 @@ package edu.upb.barber.repository.entity;
 import java.time.LocalTime;
 
 import edu.upb.barber.repository.entity.enums.DiaSemana;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
@@ -19,7 +11,15 @@ import org.hibernate.annotations.UuidGenerator;
 @Getter
 @Setter
 @Entity
-@Table(name = "horario_empleado")
+@Table(
+        name = "horario_empleado",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_horario_empleado",
+                        columnNames = {"empleado_id", "sucursal_id", "dia_semana", "hora_inicio", "hora_fin"}
+                )
+        }
+)
 public class HorarioEmpleado extends AuditableEntity {
 
     @Id

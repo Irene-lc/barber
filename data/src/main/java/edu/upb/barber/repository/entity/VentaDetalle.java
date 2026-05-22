@@ -14,12 +14,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.UuidGenerator;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "venta_detalle")
+@Check(constraints = "(tipo_item = 'SERVICIO' AND servicio_id IS NOT NULL AND producto_id IS NULL AND combo_servicio_id IS NULL) OR "
+        + "(tipo_item = 'PRODUCTO' AND producto_id IS NOT NULL AND servicio_id IS NULL AND combo_servicio_id IS NULL) OR "
+        + "(tipo_item = 'COMBO' AND combo_servicio_id IS NOT NULL AND servicio_id IS NULL AND producto_id IS NULL)")
 public class VentaDetalle extends AuditableEntity {
 
     @Id

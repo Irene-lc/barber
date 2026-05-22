@@ -11,10 +11,13 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "agenda_evento_detalle")
+@Check(constraints = "(servicio_id IS NOT NULL AND combo_servicio_id IS NULL) OR "
+        + "(servicio_id IS NULL AND combo_servicio_id IS NOT NULL)")
 @Getter
 @Setter
 public class AgendaEventoDetalle extends AuditableEntity {

@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
@@ -19,7 +20,12 @@ import org.hibernate.annotations.UuidGenerator;
 @Getter
 @Setter
 @Entity
-@Table(name = "venta")
+@Table(
+        name = "venta",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_venta_agenda_evento", columnNames = "agenda_evento_id")
+        }
+)
 public class Venta extends AuditableEntity {
 
     @Id

@@ -16,12 +16,15 @@ import org.hibernate.annotations.UuidGenerator;
 @Setter
 @Entity
 @Table(
-        name = "mascota",
+        name = "raza",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_mascota_cliente_nombre", columnNames = {"cliente_id", "nombre"})
+                @UniqueConstraint(
+                        name = "uk_raza_especie_nombre",
+                        columnNames = {"especie_id", "nombre"}
+                )
         }
 )
-public class Mascota extends AuditableEntity {
+public class Raza extends AuditableEntity {
 
     @Id
     @UuidGenerator
@@ -29,18 +32,11 @@ public class Mascota extends AuditableEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "cliente_id", nullable = false)
-    private Cliente cliente;
+    @JoinColumn(name = "especie_id", nullable = false)
+    private Especie especie;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "raza_id", nullable = false)
-    private Raza raza;
-
-    @Column(name = "nombre", nullable = false, length = 120)
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
-
-    @Column(name = "notas_especiales", columnDefinition = "TEXT")
-    private String notasEspeciales;
 
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
