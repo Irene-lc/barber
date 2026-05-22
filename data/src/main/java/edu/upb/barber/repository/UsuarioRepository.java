@@ -3,6 +3,7 @@ package edu.upb.barber.repository;
 import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
 import edu.upb.barber.repository.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -27,5 +28,17 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String> {
             WHERE u.nombre = :pNombre
             """)
     List<UsuarioResponseDto> findByNombreAux(@Param("pNombre") String nombre);
+
+    @Modifying
+    @Query("UPDATE Usuario u SET u.nombre=:pNombre, u.apellido=:pApellido," +
+            "u.email=:pEmail, u.rol=:pRol, u.activo=:pActivo")
+    void actualizarEmpresa(
+            @Param("pEmpresaId")String pUsuarioId,
+            @Param("pNombre")String nombre,
+            @Param("pApellido") String apellido,
+            @Param("pEmail") String email,
+            @Param("pRol") String rol,
+            @Param("pActivo") String activo
+            );
 
 }

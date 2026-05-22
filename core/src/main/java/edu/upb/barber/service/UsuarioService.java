@@ -90,4 +90,47 @@ public class UsuarioService {
         return usuarioRepository.findById(id);
     }
 
+    @Transactional
+    public void update(String usuarioId, UsuarioRequestDto usuarioRequestDto) throws Exception {
+
+        if (StringUtil.isNullOrEmpty(usuarioRequestDto.getNombre())) {
+            log.error("Error al guardar usuario. El campo nombre es null");
+            throw new Exception("El campo nombre es null");
+        }
+
+        if (StringUtil.isNullOrEmpty(usuarioRequestDto.getEmail())) {
+            log.error("Error al guardar usuario. El campo email es null");
+            throw new Exception("El campo email es null");
+        }
+
+        if (StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
+            log.error("Error al guardar usuario. El campo password es null");
+            throw new Exception("El campo password es null");
+        }
+
+        Optional<Usuario> optionalUsuario = this.usuarioRepository.findById(usuarioId);
+        if (optionalUsuario.isEmpty()) {
+            throw new Exception("No existe el usuario con el id: " + usuarioId);
+        }
+
+        Usuario usuario = optionalUsuario.get();
+
+        usuario.setNombre(usuarioRequestDto.getNombre());
+        usuario.setApellido(usuarioRequestDto.getApellido());
+        usuario.setPasswordHash(usuarioRequestDto.getPassword());
+        usuario.setEmail(usuarioRequestDto.getEmail());
+        usuario.setRol(usuarioRequestDto.getRol());
+        if (usuarioRequestDto.getActivo() != null) {
+            usuario.setActivo(usuarioRequestDto.getActivo());
+        }
+        if (usuarioRequestDto.getEmpresaId() != null) {
+            Empresa empresa = empresaRepository
+                    .findById(usuarioRequestDto.getEmpresaId())
+                    .orElseThrow(() ->
+                            new Exception("Empresa no encontrada"));
+            usuario.setEmpresa(empresa);
+        }
+        usuarioRepository.save(usuario);
+    }
+
 }
