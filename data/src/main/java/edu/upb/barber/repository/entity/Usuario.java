@@ -15,12 +15,16 @@ import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
+
 import java.util.Collection;
 import java.util.List;
+
+import java.util.ArrayList;
+
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -35,7 +39,8 @@ import java.util.List;
     }
 )
 
-public class Usuario extends AuditableEntity  implements UserDetails {
+public class Usuario extends AuditableEntity implements UserDetails {
+
 
     @Id
     @UuidGenerator
@@ -76,11 +81,14 @@ public class Usuario extends AuditableEntity  implements UserDetails {
     @Override
     public @Nullable String getPassword() {
         return passwordHash;
+
     }
+
 
     @Override
     public String getUsername() {
         return nombre;
+
     }
 
     @Override
