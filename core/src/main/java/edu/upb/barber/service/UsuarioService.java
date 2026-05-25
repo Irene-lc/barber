@@ -133,4 +133,13 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Usuario> findByUserIdToValidateSession(String id) {
+        return usuarioRepository.findByUserIdToValidateSession(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Usuario> findByName(String username) {
+        return usuarioRepository.findByNombreIgnoreCase(username);
+    }
 }

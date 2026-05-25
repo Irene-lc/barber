@@ -14,6 +14,10 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, String> {
 
+    Optional<Usuario> findByNombreIgnoreCase(String nombre);
+    @Query("SELECT u FROM Usuario u WHERE  u.id=:pId")
+    Optional<Usuario> findByUserIdToValidateSession(@Param("pId") String pId);
+
     Optional<Usuario> findByEmail(String email);
 
     List<Usuario> findByNombre(String nombre);
