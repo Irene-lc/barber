@@ -77,5 +77,6 @@
 		<module>data</module>
 		<module>core</module>
 		<module>barber-api</module>
+		<module>examen-api</module>
 	</modules>
 </project>

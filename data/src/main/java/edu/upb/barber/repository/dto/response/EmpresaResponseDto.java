@@ -23,7 +23,7 @@ public class EmpresaResponseDto {
         this.nit = empresa.getNit();
         this.telefono = empresa.getTelefono();
         this.email = empresa.getEmail();
-        this.activa = empresa.isActiva();
+        this.activa = empresa.isActivo();
     }
 
     public EmpresaResponseDto(

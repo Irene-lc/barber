@@ -81,7 +81,7 @@ public class EmpresaService {
                 empresaRequestDto.getEmail());
 
         if (empresaRequestDto.getActiva() != null) {
-            empresa.setActiva(
+            empresa.setActivo(
                     empresaRequestDto.getActiva());
         }
 
@@ -121,7 +121,7 @@ public class EmpresaService {
             throw new Exception("No existe ek enoresa conn el id: " + empresaId);
         }
         Empresa empresa1 = optionalEmpresa.get();
-        empresa1.setActiva(empresa.getActiva());
+        empresa1.setActivo(empresa.getActiva());
         empresa1.setNit(empresa.getNit());
         empresa1.setRazonSocial(empresa.getRazonSocial());
         empresa1.setNombre(empresa.getNombre());
