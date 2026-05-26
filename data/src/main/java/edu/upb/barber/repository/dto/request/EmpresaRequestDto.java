@@ -23,6 +23,5 @@ public class EmpresaRequestDto {
 
     private String email;
 
-    private Boolean activa;
-
+    private Boolean activo;
 }

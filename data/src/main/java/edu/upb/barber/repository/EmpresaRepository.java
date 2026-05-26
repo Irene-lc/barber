@@ -32,12 +32,19 @@ public interface EmpresaRepository extends JpaRepository<Empresa, String> {
     List<EmpresaResponseDto> findByNombreAux(
             @Param("pNombre") String nombre
     );
-    @Modifying
-    @Query("UPDATE Empresa e SET e.nombre=:pNombre, e.nit=:pNit, e.razonSocial=:pRazonSocial")
-    void actualizarEmpresa(
-            @Param("pEmpresaId")String pEmpresaId,
-            @Param("pNombre")String nombre,
-            @Param("pNit") String nit,
-            @Param("pRazonSocial") String razonSocial);
 
+    @Modifying
+    @Query("""
+            UPDATE Empresa e
+            SET e.nombre = :pNombre,
+                e.nit = :pNit,
+                e.razonSocial = :pRazonSocial
+            WHERE e.id = :pEmpresaId
+            """)
+    void actualizarEmpresa(
+            @Param("pEmpresaId") String empresaId,
+            @Param("pNombre") String nombre,
+            @Param("pNit") String nit,
+            @Param("pRazonSocial") String razonSocial
+    );
 }

@@ -14,7 +14,7 @@ public class EmpresaResponseDto {
     private String nit;
     private String telefono;
     private String email;
-    private boolean activa;
+    private boolean activo;
 
     public EmpresaResponseDto(Empresa empresa) {
         this.id = empresa.getId();
@@ -23,7 +23,7 @@ public class EmpresaResponseDto {
         this.nit = empresa.getNit();
         this.telefono = empresa.getTelefono();
         this.email = empresa.getEmail();
-        this.activa = empresa.isActiva();
+        this.activo = empresa.isActivo();
     }
 
     public EmpresaResponseDto(
@@ -35,5 +35,4 @@ public class EmpresaResponseDto {
         this.nombre = nombre;
         this.nit = nit;
     }
-
 }
