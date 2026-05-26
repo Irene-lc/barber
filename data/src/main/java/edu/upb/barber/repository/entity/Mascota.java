@@ -18,7 +18,10 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(
         name = "mascota",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_mascota_cliente_nombre", columnNames = {"cliente_id", "nombre"})
+                @UniqueConstraint(
+                        name = "uk_mascota_cliente_nombre",
+                        columnNames = {"cliente_id", "nombre"}
+                )
         }
 )
 public class Mascota extends AuditableEntity {
