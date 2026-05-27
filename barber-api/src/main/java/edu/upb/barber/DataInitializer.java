@@ -27,8 +27,7 @@ public class DataInitializer implements CommandLineRunner {
             Usuario root = userRepository.save(Usuario.builder()
                     .nombre("root")
                     .email("root@upb.com")
-                    .rol(RolUsuario.ADMIN_EMPRESA)
-                    .nombre("Ricardo")
+                    .rol(RolUsuario.ROLE_ADMIN_EMPRESA)
                     .apellido("Laredo")
                             .passwordHash(passwordEncoder.encode("Abc123**"))
                     .build());

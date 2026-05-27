@@ -38,6 +38,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> token(
             @RequestBody AuthenticationDto data) {
+
+
         try {
             OKAuthDto token = auth(data);
             return ok(token);
