@@ -101,6 +101,7 @@ public class JwtTokenProvider implements Serializable {
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token);
+            // se esta desserializando el token
             if (claims.getBody().getExpiration().after(new Date())) {
                 Usuario authUser = this.userService.findByUserIdToValidateSession(getId(token)).orElseThrow(() -> new UsernameNotFoundException("Autenticación incorrecta"));
                 return Optional.of(new UsernamePasswordAuthenticationToken(authUser, "", authUser.getAuthorities()));

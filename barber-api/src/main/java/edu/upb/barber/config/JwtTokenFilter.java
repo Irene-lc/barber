@@ -41,6 +41,8 @@ public class JwtTokenFilter extends OncePerRequestFilter implements Serializable
             try {
                 Optional<Authentication> optionalAuthentication = jwtTokenProvider.validateToken(token);
                 if (optionalAuthentication.isPresent()) {
+                    // cada vez que ingresa una petiion que tiene un jwt,
+                    //desde ese moemnto, lo de esa peticion ,epertenece a ee usuario
                     SecurityContextHolder.getContext().setAuthentication(optionalAuthentication.get());
                     filterChain.doFilter(servletRequest, servletResponse);
                     return;

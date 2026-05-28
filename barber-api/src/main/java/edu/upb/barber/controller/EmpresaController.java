@@ -2,10 +2,13 @@ package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.EmpresaRequestDto;
 import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
+import edu.upb.barber.repository.entity.Usuario;
 import edu.upb.barber.service.EmpresaService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,19 +21,15 @@ public class EmpresaController {
 
     private final EmpresaService empresaService;
 
+    @Secured({"ROLE_CLIENTE"})
     @GetMapping
     public ResponseEntity<List<EmpresaResponseDto>> empresas() {
-
+        Usuario user = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("Usuario:{} ", user.getRol());
         try {
-
-            return ResponseEntity.ok(
-                    empresaService.listar());
-
+            return ResponseEntity.ok(empresaService.listar());
         } catch (Exception e) {
-
-            log.error(
-                    "Error al listar empresas", e);
-
+            log.error("Error al listar empresas", e);
             return ResponseEntity
                     .internalServerError()
                     .build();

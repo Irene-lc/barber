@@ -68,7 +68,10 @@ public class AuthController {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(data.nombre(), data.password()));
             log.info("Autenticado correctamente");
-            SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities()));
+            // Spring boot sabe que un usuairo inicio sesion, por eso es que el framqoek sabe que usuario hace actualizacion en bd.
+            // que la sesion se mantenga abierta
+            SecurityContextHolder.getContext()
+                    .setAuthentication(new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities()));
             return jwtTokenProvider.createToken(user);
         } catch (BadCredentialsException e) {
             log.error("BadCredentialsException. Causa:{} ", e.getMessage());

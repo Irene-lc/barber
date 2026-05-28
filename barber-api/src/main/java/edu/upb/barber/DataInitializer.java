@@ -26,7 +26,7 @@ public class DataInitializer implements CommandLineRunner {
             Usuario root = userRepository.save(Usuario.builder()
                     .nombre("root")
                     .email("root@upb.com")
-                    .rol(RolUsuario.SUPER_ADMIN)
+                    .rol(RolUsuario.ROLE_SUPER_ADMIN)
                     .nombre("Barber")
                     .apellido("Barber")
                     .activo(true)
