@@ -21,7 +21,7 @@ public class EmpresaController {
 
     private final EmpresaService empresaService;
 
-//    @Secured("SUPER_ADMIN")
+    @Secured({"SUPER_ADMIN", "ADMIN_EMPREESA"})
     @GetMapping
     public ResponseEntity<List<EmpresaResponseDto>> empresas() {
 
