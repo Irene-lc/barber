@@ -1,13 +1,13 @@
 package edu.upb.barber.repository.dto.response;
 
 import edu.upb.barber.repository.entity.Empresa;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class EmpresaResponseDto {
 
     private String id;
