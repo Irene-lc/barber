@@ -24,7 +24,7 @@ import java.util.UUID;
 @EnableJpaAuditing
 @SpringBootApplication
 
-public class BarberApplication implements CommandLineRunner {
+public class BarberApplication{
 
 	@Autowired
 	private SistemaA sistemaA;
@@ -33,12 +33,12 @@ public class BarberApplication implements CommandLineRunner {
 		SpringApplication.run(BarberApplication.class, args);
 	}
 
-	@Override
+//	@Override
 	public void run(String... args) throws Exception {
 
 		// LOGIN
 		Sistema1AuthRequest authRequest = new Sistema1AuthRequest();
-		authRequest.setNombre("Barber");
+		authRequest.setNombre("root");
 		authRequest.setPassword("Abc123**");
 
 		Sistema1AuthResponse authResponse = sistemaA.auth(authRequest);
