@@ -51,4 +51,7 @@ public class Pago extends AuditableEntity {
     @JoinColumn(name = "registrado_por_usuario_id")
     private Usuario registradoPorUsuario;
 
-    }
+    @Column(name = "transaccion_externa_id", length = 100)
+    private String transaccionExternaId;
+
+}

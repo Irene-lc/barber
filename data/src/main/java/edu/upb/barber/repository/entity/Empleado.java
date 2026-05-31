@@ -2,7 +2,10 @@ package edu.upb.barber.repository.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import edu.upb.barber.repository.entity.enums.CargoEmpleado;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -46,8 +49,9 @@ public class Empleado extends AuditableEntity {
     @Column(name = "email", length = 120)
     private String email;
 
-    @Column(name = "cargo", length = 80)
-    private String cargo;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cargo", length = 30)
+    private CargoEmpleado cargo;
 
     @Column(name = "especialidad", length = 120)
     private String especialidad;
