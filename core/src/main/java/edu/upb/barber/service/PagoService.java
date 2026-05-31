@@ -79,4 +79,14 @@ public class PagoService {
 
         return responseDto;
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<Pago> listar() {
+        return pagoRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<Pago> findById(String id) {
+        return pagoRepository.findById(id);
+    }
 }
