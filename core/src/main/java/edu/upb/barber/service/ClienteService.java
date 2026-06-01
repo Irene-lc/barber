@@ -44,14 +44,15 @@ public class ClienteService {
     @Transactional
     public void save(ClienteRequestDto dto) throws Exception {
 
-        Empresa empresa = empresaRepository.findById(dto.getEmpresa())
-                .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresa()));
+
+        Empresa empresa = empresaRepository.findById(dto.getEmpresa().getId())
+                .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresa().getId()));
 
         Cliente cliente = new Cliente();
         cliente.setNombre(dto.getNombre());
         cliente.setTelefono(dto.getTelefono());
-        cliente.setEmail(dto.getCorreo());
-        cliente.setEmpresa(empresa);  // objeto completo, no solo el id
+        cliente.setEmail(dto.getEmail());
+        cliente.setEmpresa(empresa);
 
         clienteRepository.save(cliente);
     }

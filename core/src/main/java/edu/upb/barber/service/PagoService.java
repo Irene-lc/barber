@@ -31,7 +31,7 @@ public class PagoService {
 
     @Transactional
     public GenerarPagoResponseDto generarCobroQR(GenerarPagoRequestDto request) throws Exception {
-        // 1. Buscar la venta
+        // Buscar la venta
         Venta venta = ventaRepository.findById(request.getVentaId())
                 .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + request.getVentaId()));
 
@@ -40,13 +40,13 @@ public class PagoService {
             throw new Exception("La venta no tiene un cliente asociado");
         }
 
-        // 2. Preparar el Customer DTO para Stereum
+        // Preparar el Customer DTO para Stereum
         StereumCustomerDto customerDto = new StereumCustomerDto();
         customerDto.setName(cliente.getNombre());
         customerDto.setLastname(""); // Lo dejamos vacío como acordamos
         customerDto.setDocumentNumber(cliente.getDocumento() != null ? cliente.getDocumento() : "000000");
 
-        // 3. Armar el request para Stereum
+        //  Armar el request para Stereum
         StereumChargeRequestDto chargeRequest = new StereumChargeRequestDto();
         chargeRequest.setCountry("BO");
         chargeRequest.setAmount(venta.getTotal().toString()); // Mandamos el total exacto
@@ -57,11 +57,11 @@ public class PagoService {
         chargeRequest.setReservationValidityTime("15"); // 15 minutos para pagar
         chargeRequest.setCustomer(customerDto);
 
-        // 4. Llamar a Stereum (Conexión real)
+        // Llamar a Stereum (Conexión real)
         log.info("Llamando a Stereum para generar QR por un monto de {}", chargeRequest.getAmount());
         StereumChargeResponseDto stereumResponse = stereumPayClient.createCharge(chargeRequest);
 
-        // 5. Crear el Pago en tu Base de Datos
+        // Crear el Pago en tu Base de Datos
         Pago pago = new Pago();
         pago.setVenta(venta);
         pago.setMonto(venta.getTotal());
@@ -71,7 +71,7 @@ public class PagoService {
         
         pago = pagoRepository.save(pago);
 
-        // 6. Retornar el QR al frontend o postman
+        //  Retornar el QR al frontend o postman
         GenerarPagoResponseDto responseDto = new GenerarPagoResponseDto();
         responseDto.setPagoId(pago.getId());
         responseDto.setQrBase64(stereumResponse.getQrBase64());

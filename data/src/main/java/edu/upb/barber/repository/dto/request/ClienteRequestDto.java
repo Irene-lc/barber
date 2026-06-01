@@ -13,10 +13,17 @@ import java.util.UUID;
 @Getter
 public class ClienteRequestDto {
 
-    @JsonProperty("empresa_id")
-    private String empresa;
+    private EmpresaDto empresa;
     private String nombre;
     private String apellido;
     private String telefono;
-    private String correo;
+    private String email;
+    private String documento;
+    private String notas;
+    private boolean activo;
+
+    @Data
+    public static class EmpresaDto {
+        private String id;
+    }
 }

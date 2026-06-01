@@ -99,14 +99,14 @@ public class BarberApplication{
 //		System.out.println(usuarioCreado);
 
 
-		ClienteRequestDto clienteRequest = new ClienteRequestDto();
-		clienteRequest.setNombre("Carlos");
-		clienteRequest.setTelefono("77777777");
-		clienteRequest.setEmpresa("8463d2cf-c18d-4fb0-ad80-3b0a3a77953e");
-		ClienteResponseDto clienteCreado =
-				sistemaA.crearCliente(token, clienteRequest);
-
-		System.out.println("CLIENTE CREADO:");
-		System.out.println(clienteCreado);
+//		ClienteRequestDto clienteRequest = new ClienteRequestDto();
+//		clienteRequest.setNombre("Carlos");
+//		clienteRequest.setTelefono("77777777");
+//		clienteRequest.setEmpresa("8463d2cf-c18d-4fb0-ad80-3b0a3a77953e");
+//		ClienteResponseDto clienteCreado =
+//				sistemaA.crearCliente(token, clienteRequest);
+//
+//		System.out.println("CLIENTE CREADO:");
+//		System.out.println(clienteCreado);
 	}
 }
