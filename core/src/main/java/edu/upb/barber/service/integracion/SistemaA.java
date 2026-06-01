@@ -5,6 +5,7 @@ import edu.upb.barber.repository.dto.request.EmpresaRequestDto;
 import edu.upb.barber.repository.dto.request.UsuarioRequestDto;
 import edu.upb.barber.repository.dto.response.ClienteResponseDto;
 import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
+import edu.upb.barber.repository.dto.request.StereumDto;
 import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
 import edu.upb.barber.service.exception.NotDataFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -256,7 +257,6 @@ public class SistemaA {
 
         return response.getBody();
     }
-
     public ClienteResponseDto actualizarCliente(String token, Long id, ClienteRequestDto request) throws Exception {
 
         RestClient restClient = create();
@@ -281,6 +281,47 @@ public class SistemaA {
 
         return response.getBody();
     }
+    public StereumDto consumirStereum(String token, StereumDto request) throws Exception {
+        RestClient restClient = create();
+        ResponseEntity<StereumDto> response;
+        try {
+            response = restClient.post()
+                    .uri("https://api.stereum.tech/api/v1/transactions/create-charge")
+                    .header("x-api-key", token)
+                    .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                    .header("Accept", MediaType.APPLICATION_JSON_VALUE)
+                    .body(request)
+                    .retrieve()
+                    .toEntity(StereumDto.class);
+
+        } catch (Exception e) {
+            log.error("Exception. ", e);
+            throw e;
+        }
+
+        return response.getBody();
+    }
+//    public List<StereumDto> consumirStereumGet(String token,  String id) throws Exception {
+//        RestClient restClient = create();
+//        ResponseEntity<List<StereumDto>> response;
+//
+//        try {
+//
+//            response = restClient.get()
+//                    .uri(urlBase + "/api/v1/transactions/{"+id+"}/verify")
+//                    .header("Authorization", "Bearer " + token)
+//                    .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+//                    .header("Accept", MediaType.APPLICATION_JSON_VALUE)
+//                    .retrieve()
+//                    .toEntity(new ParameterizedTypeReference<List<StereumDto>>() {});
+//
+//        } catch (Exception e) {
+//            log.error("Exception. ", e);
+//            throw e;
+//        }
+//
+//        return response.getBody();
+//    }
 
 
     private RestClient create() {

@@ -1,14 +1,7 @@
 package edu.upb.barber;
 
-import edu.upb.barber.repository.dto.request.ClienteRequestDto;
-import edu.upb.barber.repository.dto.request.EmpresaRequestDto;
-import edu.upb.barber.repository.dto.request.UsuarioRequestDto;
-import edu.upb.barber.repository.dto.response.ClienteResponseDto;
-import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
-import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
-import edu.upb.barber.repository.entity.enums.RolUsuario;
-import edu.upb.barber.service.integracion.Sistema1AuthRequest;
-import edu.upb.barber.service.integracion.Sistema1AuthResponse;
+import edu.upb.barber.repository.dto.request.StereumDto;
+import edu.upb.barber.repository.dto.response.*;
 import edu.upb.barber.service.integracion.SistemaA;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -16,9 +9,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-
-import java.util.List;
-import java.util.UUID;
 
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @EnableJpaAuditing
@@ -36,28 +26,43 @@ public class BarberApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-		// LOGIN
-		Sistema1AuthRequest authRequest = new Sistema1AuthRequest();
-		authRequest.setNombre("Barber");
-		authRequest.setPassword("Abc123**");
-
-		Sistema1AuthResponse authResponse = sistemaA.auth(authRequest);
-
-		String token = authResponse.getAccessToken();
-
-		System.out.println("TOKEN:");
-		System.out.println(token);
-
-
-		List<EmpresaResponseDto> empresas = sistemaA.listarEmpresa(token);
-
-		System.out.println("LISTA EMPRESAS:");
-		System.out.println(empresas);
-
-
-
-		EmpresaRequestDto empresaRequest = new EmpresaRequestDto();
+//		StereumDto stereumDto = new StereumDto();
+//		stereumDto.setCountry("BO");
+//		stereumDto.setAmount("100");
+//		stereumDto.setCurrency("USDT");
+//		stereumDto.setNetwork("POLYGON");
+//		stereumDto.setIdempotencyKey("f3681c68-014b-48bf-b376-6445e68ed3db");
+//		stereumDto.setChargeReason("Compra de prueba");
+//		stereumDto.setReservationValidityTime("10");
+//		stereumDto.setCustomer(new Customer("Ricardo", "Laredo", "76887344"));
+//		StereumDto stereum =
+//				sistemaA.consumirStereum("9cb7ac4d-4bca-4400-beb7-a84e0b3ad582", stereumDto);
 //
+//		System.out.println(stereum);
+//		System.out.println("CLIENTE CREADO:");
+
+		// LOGIN
+//		Sistema1AuthRequest authRequest = new Sistema1AuthRequest();
+//		authRequest.setNombre("Barber");
+//		authRequest.setPassword("Abc123**");
+//
+//		Sistema1AuthResponse authResponse = sistemaA.auth(authRequest);
+//
+//		String token = authResponse.getAccessToken();
+//
+//		System.out.println("TOKEN:");
+//		System.out.println(token);
+//
+//
+//		List<EmpresaResponseDto> empresas = sistemaA.listarEmpresa(token);
+//
+//		System.out.println("LISTA EMPRESAS:");
+//		System.out.println(empresas);
+//
+//
+//
+//		EmpresaRequestDto empresaRequest = new EmpresaRequestDto();
+
 //		empresaRequest.setNombre("Empresa Nueva");
 //		empresaRequest.setRazonSocial("Empresa Nueva SRL");
 //		empresaRequest.setNit("7894568");
@@ -99,14 +104,14 @@ public class BarberApplication implements CommandLineRunner {
 //		System.out.println(usuarioCreado);
 
 
-		ClienteRequestDto clienteRequest = new ClienteRequestDto();
-		clienteRequest.setNombre("Carlos");
-		clienteRequest.setTelefono("77777777");
-		clienteRequest.setEmpresa("8463d2cf-c18d-4fb0-ad80-3b0a3a77953e");
-		ClienteResponseDto clienteCreado =
-				sistemaA.crearCliente(token, clienteRequest);
-
-		System.out.println("CLIENTE CREADO:");
-		System.out.println(clienteCreado);
+//		ClienteRequestDto clienteRequest = new ClienteRequestDto();
+//		clienteRequest.setNombre("Carlos");
+//		clienteRequest.setTelefono("77777777");
+//		clienteRequest.setEmpresa("8463d2cf-c18d-4fb0-ad80-3b0a3a77953e");
+//		ClienteResponseDto clienteCreado =
+//				sistemaA.crearCliente(token, clienteRequest);
+//
+//		System.out.println("CLIENTE CREADO:");
+//		System.out.println(clienteCreado);
 	}
 }
