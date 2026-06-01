@@ -11,6 +11,8 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+
+//Respuesta de autenticación de OK
 public class OKAuthDto implements Serializable {
     @JsonProperty("access_token")
     private String accessToken;
@@ -19,7 +21,7 @@ public class OKAuthDto implements Serializable {
     @JsonProperty("refresh_token")
     private String refreshToken;
     @JsonProperty("token_type")
-    private String tokenType;
+    private String tokenType; //normalmente el bearer
     @JsonProperty("expires_in")
     private int expiresIn;
     @JsonProperty("expires_at")

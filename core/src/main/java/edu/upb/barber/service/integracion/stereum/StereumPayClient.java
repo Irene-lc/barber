@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 
+//parecido a nuestro SistemaA pero con endpoints y request/response específicos para Stereum Pay
 @Slf4j
 @Service
 public class StereumPayClient {

@@ -11,13 +11,13 @@ public class StereumChargeRequestDto {
     private String network;
     
     @JsonProperty("idempotency_key")
-    private String idempotencyKey;
+    private String idempotencyKey; //clave unica para evitar cargos duplicados
     
     @JsonProperty("charge_reason")
     private String chargeReason;
     
     @JsonProperty("reservation_validity_time")
-    private String reservationValidityTime;
+    private String reservationValidityTime; //tiempo del qr
     
     private StereumCustomerDto customer;
 }
