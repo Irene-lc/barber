@@ -33,7 +33,7 @@ public class BarberApplication{
 		SpringApplication.run(BarberApplication.class, args);
 	}
 
-//	@Override
+	//	@Override
 	public void run(String... args) throws Exception {
 
 		// LOGIN
