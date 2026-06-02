@@ -9,6 +9,7 @@ import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
 import edu.upb.barber.service.exception.NotDataFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "sistema1.enabled", havingValue = "true", matchIfMissing = false)
 public class SistemaA {
 
     @Value("${sistema1.url-base}")
