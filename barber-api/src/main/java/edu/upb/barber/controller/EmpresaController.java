@@ -76,5 +76,28 @@ public class EmpresaController {
             return ResponseEntity.internalServerError().build();
         }
     }
+    @GetMapping("/{id}")
+    public ResponseEntity<EmpresaResponseDto> obtenerPorId(@PathVariable("id") String empresaId) {
+        try {
+            return empresaService.findById(empresaId)
+                    .map(EmpresaResponseDto::new)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Error al obtener Empresa", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable("id") String empresaId) {
+        try {
+            empresaService.delete(empresaId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error al eliminar Empresa", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
 }

@@ -1,6 +1,7 @@
 package edu.upb.barber.service;
 
 import edu.upb.barber.repository.SucursalRepository;
+import edu.upb.barber.repository.dto.request.SucursalRequestDto;
 import edu.upb.barber.repository.entity.Sucursal;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,4 +37,21 @@ public class SucursalService {
     public void delete(String id) {
         sucursalRepository.deleteById(id);
     }
+    @Transactional
+    public void update(String sucursalId, SucursalRequestDto dto) throws Exception {
+
+        Sucursal sucursal = sucursalRepository.findById(sucursalId)
+                .orElseThrow(() -> new Exception("Sucursal no encontrada con id: " + sucursalId));
+
+        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+            throw new Exception("El campo nombre es requerido");
+        }
+
+        sucursal.setNombre(dto.getNombre());
+        sucursal.setDireccion(dto.getDireccion());
+        sucursal.setTelefono(dto.getTelefono());
+
+        sucursalRepository.save(sucursal);
+    }
+
 }

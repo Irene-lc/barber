@@ -56,4 +56,23 @@ public class ClienteService {
 
         clienteRepository.save(cliente);
     }
+    @Transactional
+    public void update(String clienteId, ClienteRequestDto dto) throws Exception {
+
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new Exception("Cliente no encontrado con id: " + clienteId));
+
+        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+            throw new Exception("El campo nombre es requerido");
+        }
+
+        cliente.setNombre(dto.getNombre());
+        cliente.setTelefono(dto.getTelefono());
+        cliente.setEmail(dto.getEmail());
+        cliente.setDocumento(dto.getDocumento());
+        cliente.setNotas(dto.getNotas());
+        cliente.setActivo(dto.isActivo());
+
+        clienteRepository.save(cliente);
+    }
 }

@@ -1,5 +1,6 @@
 package edu.upb.barber.controller;
 
+import edu.upb.barber.repository.dto.request.EmpleadoRequestDto;
 import edu.upb.barber.repository.entity.Empleado;
 import edu.upb.barber.service.EmpleadoService;
 import lombok.AllArgsConstructor;
@@ -60,6 +61,19 @@ public class EmpleadoController {
 
             log.error("Error al guardar Empleado", e);
 
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> actualizar(
+            @PathVariable("id") String empleadoId,
+            @RequestBody EmpleadoRequestDto dto
+    ) {
+        try {
+            empleadoService.update(empleadoId, dto);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error al actualizar Empleado", e);
             return ResponseEntity.internalServerError().build();
         }
     }

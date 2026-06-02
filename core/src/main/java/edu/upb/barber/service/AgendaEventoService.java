@@ -203,4 +203,15 @@ public class AgendaEventoService {
             }
         }
     }
+    @Transactional(readOnly = true)
+    public List<AgendaEvento> listar() {
+        return agendaEventoRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AgendaEvento> findById(String id) {
+        return agendaEventoRepository.findById(id);
+    }
+
+
 }

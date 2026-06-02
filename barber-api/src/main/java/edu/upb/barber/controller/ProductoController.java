@@ -1,5 +1,6 @@
 package edu.upb.barber.controller;
 
+import edu.upb.barber.repository.dto.request.ProductoRequestDto;
 import edu.upb.barber.repository.entity.Producto;
 import edu.upb.barber.service.ProductoService;
 import lombok.AllArgsConstructor;
@@ -63,6 +64,21 @@ public class ProductoController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> actualizar(
+            @PathVariable("id") String productoId,
+            @RequestBody ProductoRequestDto dto
+    ) {
+        try {
+            productoService.update(productoId, dto);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error al actualizar Producto", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(

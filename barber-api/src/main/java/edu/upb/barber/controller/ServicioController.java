@@ -1,5 +1,6 @@
 package edu.upb.barber.controller;
 
+import edu.upb.barber.repository.dto.request.ServicioRequestDto;
 import edu.upb.barber.repository.entity.Servicio;
 import edu.upb.barber.service.ServicioService;
 import lombok.AllArgsConstructor;
@@ -60,6 +61,19 @@ public class ServicioController {
 
             log.error("Error al guardar Servicio", e);
 
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> actualizar(
+            @PathVariable("id") String servicioId,
+            @RequestBody ServicioRequestDto dto
+    ) {
+        try {
+            servicioService.update(servicioId, dto);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error al actualizar Servicio", e);
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -59,7 +59,19 @@
                 return ResponseEntity.internalServerError().build();
             }
         }
-
+        @PutMapping("/{id}")
+        public ResponseEntity<Void> actualizar(
+                @PathVariable("id") String clienteId,
+                @RequestBody ClienteRequestDto dto
+        ) {
+            try {
+                clienteService.update(clienteId, dto);
+                return ResponseEntity.ok().build();
+            } catch (Exception e) {
+                log.error("Error al actualizar Cliente", e);
+                return ResponseEntity.internalServerError().build();
+            }
+        }
         @DeleteMapping("/{id}")
         public ResponseEntity<Void> eliminar(
                 @PathVariable String id

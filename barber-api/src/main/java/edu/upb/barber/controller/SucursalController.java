@@ -1,5 +1,6 @@
 package edu.upb.barber.controller;
 
+import edu.upb.barber.repository.dto.request.SucursalRequestDto;
 import edu.upb.barber.repository.entity.Sucursal;
 import edu.upb.barber.service.SucursalService;
 import lombok.AllArgsConstructor;
@@ -60,6 +61,19 @@ public class SucursalController {
 
             log.error("Error al guardar Sucursal", e);
 
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> actualizar(
+            @PathVariable("id") String sucursalId,
+            @RequestBody SucursalRequestDto dto
+    ) {
+        try {
+            sucursalService.update(sucursalId, dto);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error al actualizar Sucursal", e);
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -55,4 +55,29 @@ public class UsuarioController {
             return ResponseEntity.internalServerError().build();
         }
     }
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
+    public ResponseEntity<UsuarioResponseDto> obtenerPorId(@PathVariable("id") String usuarioId) {
+        try {
+            return usuarioService.findById(usuarioId)
+                    .map(UsuarioResponseDto::new)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Error al obtener Usuario", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
+    public ResponseEntity<Void> eliminar(@PathVariable("id") String usuarioId) {
+        try {
+            usuarioService.delete(usuarioId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error al eliminar Usuario", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

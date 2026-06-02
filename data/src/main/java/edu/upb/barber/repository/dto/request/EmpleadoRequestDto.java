@@ -9,4 +9,6 @@ public class EmpleadoRequestDto {
     private String apellido;
     private String cargo;
     private Double salario;
+    private String telefono;
+    private String email;
 }

@@ -143,5 +143,13 @@ public class UsuarioService {
         return usuarioRepository.findByNombreIgnoreCase(
                 username);
     }
+    @Transactional
+    public void delete(String usuarioId) throws Exception {
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new Exception("Usuario no encontrado con id: " + usuarioId);
+        }
+        usuarioRepository.deleteById(usuarioId);
+    }
+
 
 }

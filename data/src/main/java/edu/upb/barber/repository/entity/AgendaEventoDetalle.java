@@ -16,8 +16,8 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "agenda_evento_detalle")
-@Check(constraints = "(servicio_id IS NOT NULL AND combo_servicio_id IS NULL) OR "
-        + "(servicio_id IS NULL AND combo_servicio_id IS NOT NULL)")
+//@Check(constraints = "(servicio_id IS NOT NULL AND combo_servicio_id IS NULL) OR "
+//        + "(servicio_id IS NULL AND combo_servicio_id IS NOT NULL)")
 @Getter
 @Setter
 public class AgendaEventoDetalle extends AuditableEntity {
