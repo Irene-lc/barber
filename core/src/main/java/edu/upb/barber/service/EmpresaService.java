@@ -133,5 +133,13 @@ public class EmpresaService {
 
         this.empresaRepository.save(empresa1);
     }
+    @Transactional
+    public void delete(String empresaId) throws Exception {
+        if (!empresaRepository.existsById(empresaId)) {
+            throw new Exception("Empresa no encontrada con id: " + empresaId);
+        }
+        empresaRepository.deleteById(empresaId);
+    }
+
 
 }

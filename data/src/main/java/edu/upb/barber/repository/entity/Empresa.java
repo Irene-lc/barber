@@ -3,6 +3,8 @@ package edu.upb.barber.repository.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,6 +37,16 @@ public class Empresa extends AuditableEntity {
     private String email;
 
     @Column(name = "activo", nullable = false)
-    private boolean activo = true;
+    private Boolean activo = true;
+
+
+
+    @PrePersist
+    @PreUpdate
+    private void syncActiveFlags() {
+        if (activo == null) {
+            activo = Boolean.TRUE;
+        }
+    }
 
 }
