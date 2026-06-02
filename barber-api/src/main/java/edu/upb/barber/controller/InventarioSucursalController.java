@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.InventarioSucursalRequestDto;
-import edu.upb.barber.repository.entity.InventarioSucursal;
+import edu.upb.barber.repository.dto.response.InventarioSucursalResponseDto;
 import edu.upb.barber.service.InventarioSucursalService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ public class InventarioSucursalController {
     private final InventarioSucursalService inventarioSucursalService;
 
     @GetMapping
-    public ResponseEntity<List<InventarioSucursal>> listar() {
+    public ResponseEntity<List<InventarioSucursalResponseDto>> listar() {
         try {
             return ResponseEntity.ok(inventarioSucursalService.listar());
         } catch (Exception e) {
@@ -29,7 +29,7 @@ public class InventarioSucursalController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<InventarioSucursal> obtenerPorId(@PathVariable String id) {
+    public ResponseEntity<InventarioSucursalResponseDto> obtenerPorId(@PathVariable String id) {
         try {
             return inventarioSucursalService.findById(id)
                     .map(ResponseEntity::ok)
@@ -41,7 +41,7 @@ public class InventarioSucursalController {
     }
 
     @PostMapping
-    public ResponseEntity<InventarioSucursal> crear(@RequestBody InventarioSucursalRequestDto dto) {
+    public ResponseEntity<InventarioSucursalResponseDto> crear(@RequestBody InventarioSucursalRequestDto dto) {
         try {
             return ResponseEntity.ok(inventarioSucursalService.save(dto));
         } catch (Exception e) {
@@ -51,7 +51,7 @@ public class InventarioSucursalController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<InventarioSucursal> actualizar(
+    public ResponseEntity<InventarioSucursalResponseDto> actualizar(
             @PathVariable("id") String inventarioId,
             @RequestBody InventarioSucursalRequestDto dto
     ) {

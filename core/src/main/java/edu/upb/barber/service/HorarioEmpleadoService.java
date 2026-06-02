@@ -4,6 +4,7 @@ import edu.upb.barber.repository.EmpleadoRepository;
 import edu.upb.barber.repository.HorarioEmpleadoRepository;
 import edu.upb.barber.repository.SucursalRepository;
 import edu.upb.barber.repository.dto.request.HorarioEmpleadoRequestDto;
+import edu.upb.barber.repository.dto.response.HorarioEmpleadoResponseDto;
 import edu.upb.barber.repository.entity.Empleado;
 import edu.upb.barber.repository.entity.HorarioEmpleado;
 import edu.upb.barber.repository.entity.Sucursal;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -25,18 +27,20 @@ public class HorarioEmpleadoService {
     private final SucursalRepository sucursalRepository;
 
     @Transactional(readOnly = true)
-    public List<HorarioEmpleado> listar() {
-        return horarioEmpleadoRepository.findAll();
+    public List<HorarioEmpleadoResponseDto> listar() {
+        return horarioEmpleadoRepository.findAll().stream()
+                .map(HorarioEmpleadoResponseDto::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public Optional<HorarioEmpleado> findById(String id) {
-        return horarioEmpleadoRepository.findById(id);
+    public Optional<HorarioEmpleadoResponseDto> findById(String id) {
+        return horarioEmpleadoRepository.findById(id)
+                .map(HorarioEmpleadoResponseDto::new);
     }
 
     @Transactional
-    public HorarioEmpleado save(HorarioEmpleadoRequestDto dto) throws Exception {
-
+    public HorarioEmpleadoResponseDto save(HorarioEmpleadoRequestDto dto) throws Exception {
         validarDto(dto);
 
         Empleado empleado = empleadoRepository.findById(dto.getEmpleadoId())
@@ -56,12 +60,11 @@ public class HorarioEmpleadoService {
             horario.setActivo(dto.getActivo());
         }
 
-        return horarioEmpleadoRepository.save(horario);
+        return new HorarioEmpleadoResponseDto(horarioEmpleadoRepository.save(horario));
     }
 
     @Transactional
-    public HorarioEmpleado update(String horarioId, HorarioEmpleadoRequestDto dto) throws Exception {
-
+    public HorarioEmpleadoResponseDto update(String horarioId, HorarioEmpleadoRequestDto dto) throws Exception {
         HorarioEmpleado horario = horarioEmpleadoRepository.findById(horarioId)
                 .orElseThrow(() -> new Exception("HorarioEmpleado no encontrado con id: " + horarioId));
 
@@ -75,7 +78,19 @@ public class HorarioEmpleadoService {
             horario.setActivo(dto.getActivo());
         }
 
-        return horarioEmpleadoRepository.save(horario);
+        if (dto.getEmpleadoId() != null && !dto.getEmpleadoId().isBlank()) {
+            Empleado empleado = empleadoRepository.findById(dto.getEmpleadoId())
+                    .orElseThrow(() -> new Exception("Empleado no encontrado con id: " + dto.getEmpleadoId()));
+            horario.setEmpleado(empleado);
+        }
+
+        if (dto.getSucursalId() != null && !dto.getSucursalId().isBlank()) {
+            Sucursal sucursal = sucursalRepository.findById(dto.getSucursalId())
+                    .orElseThrow(() -> new Exception("Sucursal no encontrada con id: " + dto.getSucursalId()));
+            horario.setSucursal(sucursal);
+        }
+
+        return new HorarioEmpleadoResponseDto(horarioEmpleadoRepository.save(horario));
     }
 
     @Transactional

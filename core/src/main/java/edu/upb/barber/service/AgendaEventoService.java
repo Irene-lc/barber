@@ -5,6 +5,7 @@ import edu.upb.barber.repository.dto.request.AgendaEventoCreateRequestDto;
 import edu.upb.barber.repository.dto.request.AgendaEventoDetalleCreateDto;
 import edu.upb.barber.repository.dto.request.AgendaEventoEmpleadoCreateDto;
 import edu.upb.barber.repository.dto.response.AgendaEventoCreateResponseDto;
+import edu.upb.barber.repository.dto.response.AgendaEventoResponseDto;
 import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.repository.entity.enums.RolEmpleadoEvento;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -204,14 +206,152 @@ public class AgendaEventoService {
         }
     }
     @Transactional(readOnly = true)
-    public List<AgendaEvento> listar() {
-        return agendaEventoRepository.findAll();
+    public List<AgendaEventoResponseDto> listar() {
+        return agendaEventoRepository.findAll().stream()
+                .map(AgendaEventoResponseDto::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public Optional<AgendaEvento> findById(String id) {
-        return agendaEventoRepository.findById(id);
+    public Optional<AgendaEventoResponseDto> findById(String id) {
+        return agendaEventoRepository.findById(id)
+                .map(AgendaEventoResponseDto::new);
     }
 
+    @Transactional
+    public AgendaEventoCreateResponseDto update(String id, AgendaEventoCreateRequestDto request) throws Exception {
+        AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
+                .orElseThrow(() -> new Exception("AgendaEvento no encontrado con ID: " + id));
+
+        validarRequestBase(request);
+
+        Sucursal sucursal = sucursalRepository.findById(request.getSucursalId())
+                .orElseThrow(() -> new Exception("Sucursal no encontrada con ID: " + request.getSucursalId()));
+
+        Cliente cliente = null;
+        if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
+            cliente = clienteRepository.findById(request.getClienteId())
+                    .orElseThrow(() -> new Exception("Cliente no encontrado con ID: " + request.getClienteId()));
+        }
+
+        Mascota mascota = null;
+        if (request.getMascotaId() != null && !request.getMascotaId().isBlank()) {
+            mascota = mascotaRepository.findById(request.getMascotaId())
+                    .orElseThrow(() -> new Exception("Mascota no encontrada con ID: " + request.getMascotaId()));
+        }
+
+        validarReglasPorTipo(request);
+        validarAsignacionesParaUpdate(request.getEmpleados(), request.getSucursalId(), request, id);
+        validarDetalles(request.getDetalles(), request.getTipoEvento());
+
+        // Limpiar detalles y asignaciones anteriores
+        agendaEventoDetalleRepository.deleteByAgendaEventoId(id);
+        agendaEventoEmpleadoRepository.deleteByAgendaEventoId(id);
+
+        agendaEvento.setSucursal(sucursal);
+        agendaEvento.setCliente(cliente);
+        agendaEvento.setMascota(mascota);
+        agendaEvento.setTipoEvento(request.getTipoEvento());
+        agendaEvento.setInicio(request.getInicio());
+        agendaEvento.setFin(request.getFin());
+        agendaEvento.setNotas(request.getNotas());
+
+        agendaEvento = agendaEventoRepository.save(agendaEvento);
+
+        if (request.getDetalles() != null) {
+            for (AgendaEventoDetalleCreateDto detalleDto : request.getDetalles()) {
+                AgendaEventoDetalle detalle = new AgendaEventoDetalle();
+                detalle.setAgendaEvento(agendaEvento);
+                detalle.setDuracionEstimadaMinutos(detalleDto.getDuracionEstimadaMinutos());
+                detalle.setPrecioAcordado(detalleDto.getPrecioAcordado());
+                detalle.setNotas(detalleDto.getNotas());
+
+                if (detalleDto.getServicioId() != null && !detalleDto.getServicioId().isBlank()) {
+                    Servicio servicio = servicioRepository.findById(detalleDto.getServicioId())
+                            .orElseThrow(() -> new Exception("Servicio no encontrado con ID: " + detalleDto.getServicioId()));
+                    detalle.setServicio(servicio);
+                } else {
+                    ComboServicio combo = comboServicioRepository.findById(detalleDto.getComboServicioId())
+                            .orElseThrow(() -> new Exception("Combo no encontrado con ID: " + detalleDto.getComboServicioId()));
+                    detalle.setComboServicio(combo);
+                }
+                agendaEventoDetalleRepository.save(detalle);
+            }
+        }
+
+        if (request.getEmpleados() != null) {
+            for (AgendaEventoEmpleadoCreateDto empleadoDto : request.getEmpleados()) {
+                Empleado empleado = empleadoRepository.findById(empleadoDto.getEmpleadoId())
+                        .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + empleadoDto.getEmpleadoId()));
+
+                AgendaEventoEmpleado agendaEventoEmpleado = new AgendaEventoEmpleado();
+                agendaEventoEmpleado.setAgendaEvento(agendaEvento);
+                agendaEventoEmpleado.setEmpleado(empleado);
+                agendaEventoEmpleado.setRolEnEvento(
+                        empleadoDto.getRolEnEvento() == null ? RolEmpleadoEvento.RESPONSABLE : empleadoDto.getRolEnEvento()
+                );
+                agendaEventoEmpleadoRepository.save(agendaEventoEmpleado);
+            }
+        }
+
+        AgendaEventoCreateResponseDto response = new AgendaEventoCreateResponseDto();
+        response.setAgendaEventoId(agendaEvento.getId());
+        response.setEstado(agendaEvento.getEstado());
+        return response;
+    }
+
+    @Transactional
+    public void delete(String id) throws Exception {
+        AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
+                .orElseThrow(() -> new Exception("AgendaEvento no encontrado con ID: " + id));
+
+        agendaEventoDetalleRepository.deleteByAgendaEventoId(id);
+        agendaEventoEmpleadoRepository.deleteByAgendaEventoId(id);
+        agendaEventoRepository.delete(agendaEvento);
+    }
+
+    private void validarAsignacionesParaUpdate(
+            List<AgendaEventoEmpleadoCreateDto> empleados,
+            String sucursalId,
+            AgendaEventoCreateRequestDto request,
+            String excludeEventoId
+    ) throws Exception {
+        if (empleados == null || empleados.isEmpty()) {
+            return;
+        }
+
+        Set<String> ids = new HashSet<>();
+        for (AgendaEventoEmpleadoCreateDto asignacion : empleados) {
+            if (asignacion.getEmpleadoId() == null || asignacion.getEmpleadoId().isBlank()) {
+                throw new Exception("empleado_id es requerido en cada asignacion");
+            }
+            if (!ids.add(asignacion.getEmpleadoId())) {
+                throw new Exception("Empleado duplicado en asignaciones: " + asignacion.getEmpleadoId());
+            }
+
+            Empleado empleado = empleadoRepository.findById(asignacion.getEmpleadoId())
+                    .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + asignacion.getEmpleadoId()));
+            if (!empleado.isActivo()) {
+                throw new Exception("Empleado inactivo: " + empleado.getId());
+            }
+
+            boolean pertenece = empleadoSucursalRepository
+                    .existsByEmpleadoIdAndSucursalIdAndActivoTrue(asignacion.getEmpleadoId(), sucursalId);
+            if (!pertenece) {
+                throw new Exception("Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
+            }
+
+            boolean enConflicto = agendaEventoEmpleadoRepository.existsConflictoHorarioEmpleadoExcludingEvent(
+                    asignacion.getEmpleadoId(),
+                    excludeEventoId,
+                    request.getInicio(),
+                    request.getFin(),
+                    Arrays.asList(EstadoEvento.CANCELADO, EstadoEvento.NO_SHOW)
+            );
+            if (enConflicto) {
+                throw new Exception("Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
+            }
+        }
+    }
 
 }

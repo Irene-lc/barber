@@ -4,6 +4,7 @@ import edu.upb.barber.repository.InventarioSucursalRepository;
 import edu.upb.barber.repository.ProductoRepository;
 import edu.upb.barber.repository.SucursalRepository;
 import edu.upb.barber.repository.dto.request.InventarioSucursalRequestDto;
+import edu.upb.barber.repository.dto.response.InventarioSucursalResponseDto;
 import edu.upb.barber.repository.entity.InventarioSucursal;
 import edu.upb.barber.repository.entity.Producto;
 import edu.upb.barber.repository.entity.Sucursal;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -25,18 +27,20 @@ public class InventarioSucursalService {
     private final SucursalRepository sucursalRepository;
 
     @Transactional(readOnly = true)
-    public List<InventarioSucursal> listar() {
-        return inventarioSucursalRepository.findAll();
+    public List<InventarioSucursalResponseDto> listar() {
+        return inventarioSucursalRepository.findAll().stream()
+                .map(InventarioSucursalResponseDto::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public Optional<InventarioSucursal> findById(String id) {
-        return inventarioSucursalRepository.findById(id);
+    public Optional<InventarioSucursalResponseDto> findById(String id) {
+        return inventarioSucursalRepository.findById(id)
+                .map(InventarioSucursalResponseDto::new);
     }
 
     @Transactional
-    public InventarioSucursal save(InventarioSucursalRequestDto dto) throws Exception {
-
+    public InventarioSucursalResponseDto save(InventarioSucursalRequestDto dto) throws Exception {
         validarDto(dto);
 
         Producto producto = productoRepository.findById(dto.getProductoId())
@@ -55,12 +59,11 @@ public class InventarioSucursalService {
             inventario.setActivo(dto.getActivo());
         }
 
-        return inventarioSucursalRepository.save(inventario);
+        return new InventarioSucursalResponseDto(inventarioSucursalRepository.save(inventario));
     }
 
     @Transactional
-    public InventarioSucursal update(String inventarioId, InventarioSucursalRequestDto dto) throws Exception {
-
+    public InventarioSucursalResponseDto update(String inventarioId, InventarioSucursalRequestDto dto) throws Exception {
         InventarioSucursal inventario = inventarioSucursalRepository.findById(inventarioId)
                 .orElseThrow(() -> new Exception("InventarioSucursal no encontrado con id: " + inventarioId));
 
@@ -73,7 +76,19 @@ public class InventarioSucursalService {
             inventario.setActivo(dto.getActivo());
         }
 
-        return inventarioSucursalRepository.save(inventario);
+        if (dto.getProductoId() != null && !dto.getProductoId().isBlank()) {
+            Producto producto = productoRepository.findById(dto.getProductoId())
+                    .orElseThrow(() -> new Exception("Producto no encontrado con id: " + dto.getProductoId()));
+            inventario.setProducto(producto);
+        }
+
+        if (dto.getSucursalId() != null && !dto.getSucursalId().isBlank()) {
+            Sucursal sucursal = sucursalRepository.findById(dto.getSucursalId())
+                    .orElseThrow(() -> new Exception("Sucursal no encontrada con id: " + dto.getSucursalId()));
+            inventario.setSucursal(sucursal);
+        }
+
+        return new InventarioSucursalResponseDto(inventarioSucursalRepository.save(inventario));
     }
 
     @Transactional

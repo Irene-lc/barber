@@ -1,8 +1,7 @@
-
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.HorarioEmpleadoRequestDto;
-import edu.upb.barber.repository.entity.HorarioEmpleado;
+import edu.upb.barber.repository.dto.response.HorarioEmpleadoResponseDto;
 import edu.upb.barber.service.HorarioEmpleadoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ public class HorarioEmpleadoController {
     private final HorarioEmpleadoService horarioEmpleadoService;
 
     @GetMapping
-    public ResponseEntity<List<HorarioEmpleado>> listar() {
+    public ResponseEntity<List<HorarioEmpleadoResponseDto>> listar() {
         try {
             return ResponseEntity.ok(horarioEmpleadoService.listar());
         } catch (Exception e) {
@@ -30,7 +29,7 @@ public class HorarioEmpleadoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<HorarioEmpleado> obtenerPorId(@PathVariable String id) {
+    public ResponseEntity<HorarioEmpleadoResponseDto> obtenerPorId(@PathVariable String id) {
         try {
             return horarioEmpleadoService.findById(id)
                     .map(ResponseEntity::ok)
@@ -42,7 +41,7 @@ public class HorarioEmpleadoController {
     }
 
     @PostMapping
-    public ResponseEntity<HorarioEmpleado> crear(@RequestBody HorarioEmpleadoRequestDto dto) {
+    public ResponseEntity<HorarioEmpleadoResponseDto> crear(@RequestBody HorarioEmpleadoRequestDto dto) {
         try {
             return ResponseEntity.ok(horarioEmpleadoService.save(dto));
         } catch (Exception e) {
@@ -52,7 +51,7 @@ public class HorarioEmpleadoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<HorarioEmpleado> actualizar(
+    public ResponseEntity<HorarioEmpleadoResponseDto> actualizar(
             @PathVariable("id") String horarioId,
             @RequestBody HorarioEmpleadoRequestDto dto
     ) {

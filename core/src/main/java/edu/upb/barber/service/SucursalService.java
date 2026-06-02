@@ -1,7 +1,10 @@
 package edu.upb.barber.service;
 
+import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.SucursalRepository;
 import edu.upb.barber.repository.dto.request.SucursalRequestDto;
+import edu.upb.barber.repository.dto.response.SucursalResponseDto;
+import edu.upb.barber.repository.entity.Empresa;
 import edu.upb.barber.repository.entity.Sucursal;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -17,29 +21,47 @@ import java.util.Optional;
 public class SucursalService {
 
     private final SucursalRepository sucursalRepository;
+    private final EmpresaRepository empresaRepository;
 
     @Transactional(readOnly = true)
-    public List<Sucursal> listar() {
-        return sucursalRepository.findAll();
+    public List<SucursalResponseDto> listar() {
+        return sucursalRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public Optional<Sucursal> findById(String id) {
-        return sucursalRepository.findById(id);
+    public Optional<SucursalResponseDto> findById(String id) {
+        return sucursalRepository.findById(id)
+                .map(this::mapToResponse);
     }
 
     @Transactional
-    public void save(Sucursal sucursal) {
-        sucursalRepository.save(sucursal);
+    public SucursalResponseDto save(SucursalRequestDto dto) throws Exception {
+        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+            throw new Exception("El campo nombre es requerido");
+        }
+        if (dto.getEmpresaId() == null || dto.getEmpresaId().isBlank()) {
+            throw new Exception("El campo empresa_id es requerido");
+        }
+
+        Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
+                .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
+
+        Sucursal sucursal = new Sucursal();
+        sucursal.setNombre(dto.getNombre());
+        sucursal.setDireccion(dto.getDireccion());
+        sucursal.setTelefono(dto.getTelefono());
+        sucursal.setEmpresa(empresa);
+        if (dto.getActivo() != null) {
+            sucursal.setActivo(dto.getActivo());
+        }
+
+        return mapToResponse(sucursalRepository.save(sucursal));
     }
 
     @Transactional
-    public void delete(String id) {
-        sucursalRepository.deleteById(id);
-    }
-    @Transactional
-    public void update(String sucursalId, SucursalRequestDto dto) throws Exception {
-
+    public SucursalResponseDto update(String sucursalId, SucursalRequestDto dto) throws Exception {
         Sucursal sucursal = sucursalRepository.findById(sucursalId)
                 .orElseThrow(() -> new Exception("Sucursal no encontrada con id: " + sucursalId));
 
@@ -51,7 +73,36 @@ public class SucursalService {
         sucursal.setDireccion(dto.getDireccion());
         sucursal.setTelefono(dto.getTelefono());
 
-        sucursalRepository.save(sucursal);
+        if (dto.getEmpresaId() != null && !dto.getEmpresaId().isBlank()) {
+            Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
+                    .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
+            sucursal.setEmpresa(empresa);
+        }
+
+        if (dto.getActivo() != null) {
+            sucursal.setActivo(dto.getActivo());
+        }
+
+        return mapToResponse(sucursalRepository.save(sucursal));
     }
 
+    @Transactional
+    public void delete(String id) throws Exception {
+        if (!sucursalRepository.existsById(id)) {
+            throw new Exception("Sucursal no encontrada con id: " + id);
+        }
+        sucursalRepository.deleteById(id);
+    }
+
+    private SucursalResponseDto mapToResponse(Sucursal sucursal) {
+        return SucursalResponseDto.builder()
+                .id(sucursal.getId())
+                .nombre(sucursal.getNombre())
+                .direccion(sucursal.getDireccion())
+                .telefono(sucursal.getTelefono())
+                .empresaId(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getId() : null)
+                .empresaNombre(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getNombre() : null)
+                .activo(sucursal.isActivo())
+                .build();
+    }
 }

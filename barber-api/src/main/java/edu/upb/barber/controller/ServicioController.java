@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.ServicioRequestDto;
-import edu.upb.barber.repository.entity.Servicio;
+import edu.upb.barber.repository.dto.response.ServicioResponseDto;
 import edu.upb.barber.service.ServicioService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +19,9 @@ public class ServicioController {
     private final ServicioService servicioService;
 
     @GetMapping
-    public ResponseEntity<List<Servicio>> listar() {
+    public ResponseEntity<List<ServicioResponseDto>> listar() {
         try {
-            return ResponseEntity.ok(
-                    servicioService.listar());
+            return ResponseEntity.ok(servicioService.listar());
         } catch (Exception e) {
             log.error("Error al listar servicios", e);
             return ResponseEntity.internalServerError().build();
@@ -30,48 +29,34 @@ public class ServicioController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Servicio> obtenerPorId(
-            @PathVariable String id
-    ) {
+    public ResponseEntity<ServicioResponseDto> obtenerPorId(@PathVariable String id) {
         try {
-
             return servicioService.findById(id)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
-
         } catch (Exception e) {
-
             log.error("Error al obtener Servicio", e);
-
             return ResponseEntity.internalServerError().build();
         }
     }
 
     @PostMapping
-    public ResponseEntity<Void> guardar(
-            @RequestBody Servicio servicio
-    ) {
+    public ResponseEntity<ServicioResponseDto> guardar(@RequestBody ServicioRequestDto dto) {
         try {
-
-            servicioService.save(servicio);
-
-            return ResponseEntity.ok().build();
-
+            return ResponseEntity.ok(servicioService.save(dto));
         } catch (Exception e) {
-
             log.error("Error al guardar Servicio", e);
-
             return ResponseEntity.internalServerError().build();
         }
     }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Void> actualizar(
+    public ResponseEntity<ServicioResponseDto> actualizar(
             @PathVariable("id") String servicioId,
             @RequestBody ServicioRequestDto dto
     ) {
         try {
-            servicioService.update(servicioId, dto);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(servicioService.update(servicioId, dto));
         } catch (Exception e) {
             log.error("Error al actualizar Servicio", e);
             return ResponseEntity.internalServerError().build();
@@ -79,19 +64,12 @@ public class ServicioController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(
-            @PathVariable String id
-    ) {
+    public ResponseEntity<Void> eliminar(@PathVariable String id) {
         try {
-
             servicioService.delete(id);
-
             return ResponseEntity.ok().build();
-
         } catch (Exception e) {
-
             log.error("Error al eliminar Servicio", e);
-
             return ResponseEntity.internalServerError().build();
         }
     }

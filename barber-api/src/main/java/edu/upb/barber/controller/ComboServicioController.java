@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.ComboServicioRequestDto;
-import edu.upb.barber.repository.entity.ComboServicio;
+import edu.upb.barber.repository.dto.response.ComboServicioResponseDto;
 import edu.upb.barber.service.ComboServicioService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ public class ComboServicioController {
     private final ComboServicioService comboServicioService;
 
     @GetMapping
-    public ResponseEntity<List<ComboServicio>> listar() {
+    public ResponseEntity<List<ComboServicioResponseDto>> listar() {
         try {
             return ResponseEntity.ok(comboServicioService.listar());
         } catch (Exception e) {
@@ -29,7 +29,7 @@ public class ComboServicioController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ComboServicio> obtenerPorId(@PathVariable String id) {
+    public ResponseEntity<ComboServicioResponseDto> obtenerPorId(@PathVariable String id) {
         try {
             return comboServicioService.findById(id)
                     .map(ResponseEntity::ok)
@@ -41,7 +41,7 @@ public class ComboServicioController {
     }
 
     @PostMapping
-    public ResponseEntity<ComboServicio> crear(@RequestBody ComboServicioRequestDto dto) {
+    public ResponseEntity<ComboServicioResponseDto> crear(@RequestBody ComboServicioRequestDto dto) {
         try {
             return ResponseEntity.ok(comboServicioService.save(dto));
         } catch (Exception e) {
@@ -51,7 +51,7 @@ public class ComboServicioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ComboServicio> actualizar(
+    public ResponseEntity<ComboServicioResponseDto> actualizar(
             @PathVariable("id") String comboId,
             @RequestBody ComboServicioRequestDto dto
     ) {

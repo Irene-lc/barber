@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.SucursalRequestDto;
-import edu.upb.barber.repository.entity.Sucursal;
+import edu.upb.barber.repository.dto.response.SucursalResponseDto;
 import edu.upb.barber.service.SucursalService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +19,9 @@ public class SucursalController {
     private final SucursalService sucursalService;
 
     @GetMapping
-    public ResponseEntity<List<Sucursal>> listar() {
+    public ResponseEntity<List<SucursalResponseDto>> listar() {
         try {
-            return ResponseEntity.ok(
-                    sucursalService.listar());
+            return ResponseEntity.ok(sucursalService.listar());
         } catch (Exception e) {
             log.error("Error al listar sucursales", e);
             return ResponseEntity.internalServerError().build();
@@ -30,48 +29,34 @@ public class SucursalController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Sucursal> obtenerPorId(
-            @PathVariable String id
-    ) {
+    public ResponseEntity<SucursalResponseDto> obtenerPorId(@PathVariable String id) {
         try {
-
             return sucursalService.findById(id)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
-
         } catch (Exception e) {
-
             log.error("Error al obtener Sucursal", e);
-
             return ResponseEntity.internalServerError().build();
         }
     }
 
     @PostMapping
-    public ResponseEntity<Void> guardar(
-            @RequestBody Sucursal sucursal
-    ) {
+    public ResponseEntity<SucursalResponseDto> guardar(@RequestBody SucursalRequestDto dto) {
         try {
-
-            sucursalService.save(sucursal);
-
-            return ResponseEntity.ok().build();
-
+            return ResponseEntity.ok(sucursalService.save(dto));
         } catch (Exception e) {
-
             log.error("Error al guardar Sucursal", e);
-
             return ResponseEntity.internalServerError().build();
         }
     }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Void> actualizar(
+    public ResponseEntity<SucursalResponseDto> actualizar(
             @PathVariable("id") String sucursalId,
             @RequestBody SucursalRequestDto dto
     ) {
         try {
-            sucursalService.update(sucursalId, dto);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(sucursalService.update(sucursalId, dto));
         } catch (Exception e) {
             log.error("Error al actualizar Sucursal", e);
             return ResponseEntity.internalServerError().build();
@@ -79,19 +64,12 @@ public class SucursalController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(
-            @PathVariable String id
-    ) {
+    public ResponseEntity<Void> eliminar(@PathVariable String id) {
         try {
-
             sucursalService.delete(id);
-
             return ResponseEntity.ok().build();
-
         } catch (Exception e) {
-
             log.error("Error al eliminar Sucursal", e);
-
             return ResponseEntity.internalServerError().build();
         }
     }

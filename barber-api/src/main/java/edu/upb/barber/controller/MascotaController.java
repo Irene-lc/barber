@@ -1,7 +1,7 @@
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.MascotaRequestDto;
-import edu.upb.barber.repository.entity.Mascota;
+import edu.upb.barber.repository.dto.response.MascotaResponseDto;
 import edu.upb.barber.service.MascotaService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,14 +12,14 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/mascotas")
+@RequestMapping("/api/v1/mascotas")
 @AllArgsConstructor
 public class MascotaController {
 
     private final MascotaService mascotaService;
 
     @GetMapping
-    public ResponseEntity<List<Mascota>> listar() {
+    public ResponseEntity<List<MascotaResponseDto>> listar() {
         try {
             return ResponseEntity.ok(mascotaService.listar());
         } catch (Exception e) {
@@ -29,7 +29,7 @@ public class MascotaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Mascota> obtenerPorId(@PathVariable String id) {
+    public ResponseEntity<MascotaResponseDto> obtenerPorId(@PathVariable String id) {
         try {
             return mascotaService.obtenerPorId(id)
                     .map(ResponseEntity::ok)
@@ -41,7 +41,7 @@ public class MascotaController {
     }
 
     @PostMapping
-    public ResponseEntity<Mascota> guardar(@RequestBody Mascota dto) {
+    public ResponseEntity<MascotaResponseDto> guardar(@RequestBody MascotaRequestDto dto) {
         try {
             return ResponseEntity.ok(mascotaService.guardar(dto));
         } catch (Exception e) {
@@ -51,7 +51,7 @@ public class MascotaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Mascota> actualizar(
+    public ResponseEntity<MascotaResponseDto> actualizar(
             @PathVariable("id") String mascotaId,
             @RequestBody MascotaRequestDto dto
     ) {
@@ -73,5 +73,4 @@ public class MascotaController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
 }
