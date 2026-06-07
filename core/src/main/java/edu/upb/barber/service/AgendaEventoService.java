@@ -208,14 +208,58 @@ public class AgendaEventoService {
     @Transactional(readOnly = true)
     public List<AgendaEventoResponseDto> listar() {
         return agendaEventoRepository.findAll().stream()
-                .map(AgendaEventoResponseDto::new)
+                .map(ae -> {
+                    AgendaEventoResponseDto dto = new AgendaEventoResponseDto(ae);
+                    List<AgendaEventoResponseDto.DetalleDto> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(ae.getId()).stream()
+                            .map(d -> new AgendaEventoResponseDto.DetalleDto(
+                                    d.getServicio() != null ? d.getServicio().getId() : null,
+                                    d.getServicio() != null ? d.getServicio().getNombre() : "Combo",
+                                    d.getPrecioAcordado() != null ? d.getPrecioAcordado().doubleValue() : 0.0,
+                                    d.getDuracionEstimadaMinutos()
+                            ))
+                            .toList();
+                    dto.setDetalles(detalles);
+
+                    List<AgendaEventoResponseDto.EmpleadoDto> empleados = agendaEventoEmpleadoRepository.findByAgendaEventoId(ae.getId()).stream()
+                            .map(e -> new AgendaEventoResponseDto.EmpleadoDto(
+                                    e.getEmpleado().getId(),
+                                    e.getEmpleado().getNombre(),
+                                    e.getRolEnEvento() != null ? e.getRolEnEvento().name() : null
+                            ))
+                            .toList();
+                    dto.setEmpleados(empleados);
+
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public Optional<AgendaEventoResponseDto> findById(String id) {
         return agendaEventoRepository.findById(id)
-                .map(AgendaEventoResponseDto::new);
+                .map(ae -> {
+                    AgendaEventoResponseDto dto = new AgendaEventoResponseDto(ae);
+                    List<AgendaEventoResponseDto.DetalleDto> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(ae.getId()).stream()
+                            .map(d -> new AgendaEventoResponseDto.DetalleDto(
+                                    d.getServicio() != null ? d.getServicio().getId() : null,
+                                    d.getServicio() != null ? d.getServicio().getNombre() : "Combo",
+                                    d.getPrecioAcordado() != null ? d.getPrecioAcordado().doubleValue() : 0.0,
+                                    d.getDuracionEstimadaMinutos()
+                            ))
+                            .toList();
+                    dto.setDetalles(detalles);
+
+                    List<AgendaEventoResponseDto.EmpleadoDto> empleados = agendaEventoEmpleadoRepository.findByAgendaEventoId(ae.getId()).stream()
+                            .map(e -> new AgendaEventoResponseDto.EmpleadoDto(
+                                    e.getEmpleado().getId(),
+                                    e.getEmpleado().getNombre(),
+                                    e.getRolEnEvento() != null ? e.getRolEnEvento().name() : null
+                            ))
+                            .toList();
+                    dto.setEmpleados(empleados);
+
+                    return dto;
+                });
     }
 
     @Transactional
@@ -308,6 +352,15 @@ public class AgendaEventoService {
         agendaEventoDetalleRepository.deleteByAgendaEventoId(id);
         agendaEventoEmpleadoRepository.deleteByAgendaEventoId(id);
         agendaEventoRepository.delete(agendaEvento);
+    }
+
+    @Transactional
+    public AgendaEventoResponseDto actualizarEstado(String id, EstadoEvento nuevoEstado) throws Exception {
+        AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
+                .orElseThrow(() -> new Exception("AgendaEvento no encontrado con ID: " + id));
+        agendaEvento.setEstado(nuevoEstado);
+        agendaEvento = agendaEventoRepository.save(agendaEvento);
+        return new AgendaEventoResponseDto(agendaEvento);
     }
 
     private void validarAsignacionesParaUpdate(

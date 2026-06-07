@@ -36,6 +36,11 @@ public class UsuarioService {
             throw new Exception("El campo email es null");
         }
 
+        if (!isValidEmail(usuarioRequestDto.getEmail())) {
+            log.error("Error al guardar usuario. Formato de email inválido: {}", usuarioRequestDto.getEmail());
+            throw new Exception("El formato del correo electrónico es inválido");
+        }
+
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
             log.error("Error al guardar usuario. El campo password es null");
             throw new Exception("El campo password es null");
@@ -103,6 +108,11 @@ public class UsuarioService {
             throw new Exception("El campo email es null");
         }
 
+        if (!isValidEmail(usuarioRequestDto.getEmail())) {
+            log.error("Error al actualizar usuario. Formato de email inválido: {}", usuarioRequestDto.getEmail());
+            throw new Exception("El formato del correo electrónico es inválido");
+        }
+
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
             log.error("Error al guardar usuario. El campo password es null");
             throw new Exception("El campo password es null");
@@ -140,8 +150,7 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public Optional<Usuario> findByUsername(String username) {
-        return usuarioRepository.findByNombreIgnoreCase(
-                username);
+        return usuarioRepository.findByEmail(username);
     }
     @Transactional
     public void delete(String usuarioId) throws Exception {
@@ -149,6 +158,14 @@ public class UsuarioService {
             throw new Exception("Usuario no encontrado con id: " + usuarioId);
         }
         usuarioRepository.deleteById(usuarioId);
+    }
+
+    private static final java.util.regex.Pattern EMAIL_PATTERN =
+            java.util.regex.Pattern.compile("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$");
+
+    private boolean isValidEmail(String email) {
+        if (email == null) return false;
+        return EMAIL_PATTERN.matcher(email).matches();
     }
 
 

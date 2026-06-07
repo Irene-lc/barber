@@ -68,6 +68,8 @@ public class JwtTokenProvider implements Serializable {
                 .tokenType("bearer")
                 .expiresIn(this.validityInMinutes)
                 .expiresAt(validity.getTime())
+                .username(user.getEmail())
+                .rol(user.getRol().name())
                 .build();
     }
 

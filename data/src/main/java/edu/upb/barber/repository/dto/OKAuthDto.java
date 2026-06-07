@@ -24,4 +24,7 @@ public class OKAuthDto implements Serializable {
     private int expiresIn;
     @JsonProperty("expires_at")
     private long expiresAt;
+
+    private String username;
+    private String rol;
 }
