@@ -45,21 +45,15 @@ public class EmpresaController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> guardar(
+    public ResponseEntity<?> guardar(
             @RequestBody EmpresaRequestDto empresa
     ) {
-
         try {
-
             empresaService.save(empresa);
-
             return ResponseEntity.ok().build();
-
         } catch (Exception e) {
-
             log.error(
                     "Error al guardar empresa", e);
-
             return ResponseEntity
                     .internalServerError()
                     .build();

@@ -21,6 +21,9 @@ public class MascotaRequestDto {
 
     @JsonProperty("raza_id")
     private String razaId;
+    @JsonProperty("especie_id")
+    private String especieId;
 
+    @JsonProperty("activa")
     private Boolean activo;
 }
