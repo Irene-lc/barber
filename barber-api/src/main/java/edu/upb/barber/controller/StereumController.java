@@ -28,7 +28,7 @@ import static org.springframework.http.ResponseEntity.ok;
 @RequestMapping("/api/v1/stereum")
 public class StereumController {
 
-    @Value("${stereum.api-secret:LALALALAAL}")
+    @Value("${stereum.api-secret}")
     private String secretKey;
     @PostMapping( produces = MediaType.APPLICATION_JSON_VALUE, consumes = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<Void> outbound(

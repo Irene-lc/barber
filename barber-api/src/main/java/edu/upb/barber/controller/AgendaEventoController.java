@@ -3,6 +3,7 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.AgendaEventoCreateRequestDto;
 import edu.upb.barber.repository.dto.response.AgendaEventoCreateResponseDto;
 import edu.upb.barber.repository.dto.response.AgendaEventoResponseDto;
+import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.service.AgendaEventoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +77,19 @@ public class AgendaEventoController {
         } catch (Exception e) {
             log.error("Error al eliminar AgendaEvento", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<AgendaEventoResponseDto> actualizarEstado(
+            @PathVariable String id,
+            @RequestParam EstadoEvento nuevoEstado
+    ) {
+        try {
+            return ResponseEntity.ok(agendaEventoService.actualizarEstado(id, nuevoEstado));
+        } catch (Exception e) {
+            log.error("Error al actualizar estado de AgendaEvento", e);
+            return ResponseEntity.badRequest().build();
         }
     }
 }
