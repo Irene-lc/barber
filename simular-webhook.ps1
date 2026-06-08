@@ -4,7 +4,7 @@ param (
 )
 
 # Llave que Stereum usa para firmar (la corta, que descubrimos antes)
-$apiKey = "6ea740c3-6db9-44ce-beda-c8e9a3038ed0"
+$secretKey = "33397e9e999d450693fb2b32e9bb5dbe75e804da685d42b0bbf3a5248e8435b0d720506cea6a4594890b424d27a420726e23548f158b48109fb7feb14afcea77"
 
 # Obtener timestamp exacto en UTC (evita bugs de zona horaria de PowerShell)
 $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
@@ -37,7 +37,7 @@ $bodyCompact = $body
 
 # Generar HMAC SHA256
 $hmac = New-Object System.Security.Cryptography.HMACSHA256
-$hmac.Key = [System.Text.Encoding]::UTF8.GetBytes($apiKey)
+$hmac.Key = [System.Text.Encoding]::UTF8.GetBytes($secretKey)
 $hashBytes = $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($body))
 $signature = [BitConverter]::ToString($hashBytes).Replace("-","").ToLower()
 
@@ -51,12 +51,10 @@ $headers = @{
     "Content-Type" = "application/json"
     "X-Signature" = $signature
     "X-Timestamp" = $timestamp.ToString()
-    "ngrok-skip-browser-warning" = "1"
-    "User-Agent" = "PostmanRuntime/7.32.3"
 }
 
 try {
-    $response = Invoke-RestMethod -Uri "https://salutary-straggler-shortwave.ngrok-free.dev" -Method Post -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/v1/stereum" -Method Post -Headers $headers -Body $body
     Write-Host "¡Exito! El webhook fue enviado y procesado por Spring Boot." -ForegroundColor Green
     Write-Host "Revisa tu base de datos o Postman para ver el estado 'PAGADO'." -ForegroundColor Green
 } catch {
