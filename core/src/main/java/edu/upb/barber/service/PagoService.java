@@ -4,6 +4,7 @@ import edu.upb.barber.repository.PagoRepository;
 import edu.upb.barber.repository.VentaRepository;
 import edu.upb.barber.repository.UsuarioRepository;
 import edu.upb.barber.repository.dto.request.GenerarPagoRequestDto;
+import edu.upb.barber.repository.dto.request.NotificacionRequestDto;
 import edu.upb.barber.repository.dto.request.PagoRequestDto;
 import edu.upb.barber.repository.dto.response.GenerarPagoResponseDto;
 import edu.upb.barber.repository.dto.response.PagoResponseDto;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,7 +60,7 @@ public class PagoService {
         chargeRequest.setCurrency("USDT");
         chargeRequest.setNetwork("POLYGON");
         chargeRequest.setIdempotencyKey(UUID.randomUUID().toString());
-        chargeRequest.setChargeReason("Cobro de barbería Venta: " + venta.getId());
+        chargeRequest.setChargeReason("Cobro de barberia Venta: " + venta.getId());
         chargeRequest.setReservationValidityTime("15");
         chargeRequest.setCustomer(customerDto);
 
@@ -80,6 +82,55 @@ public class PagoService {
         responseDto.setPaymentLink(stereumResponse.getPaymentLink());
 
         return responseDto;
+    }
+
+    /**
+     * Procesa la notificacion del webhook
+     * Busca el pago por su ID externo y actualiza su estado segun el resultado
+     * Estados de Stereum: COMPLETED, FAILED, EXPIRED, PENDING
+     */
+    @Transactional
+    public void procesarNotificacionWebhook(NotificacionRequestDto notificacion) throws Exception {
+        if (notificacion.getTransaction() == null || notificacion.getTransaction().getId() == null) {
+            log.warn("Notificacion de Stereum recibida sin datos de transaccion: {}", notificacion);
+            return;
+        }
+
+        String transaccionExternaId = notificacion.getTransaction().getId().toString();
+        String statusRecibido = notificacion.getTransaction().getStatus();
+
+        log.info("Procesando notificacion webhook de Stereum. TransaccionId={}, Status={}",
+                transaccionExternaId, statusRecibido);
+
+        Pago pago = pagoRepository.findByTransaccionExternaId(transaccionExternaId)
+                .orElseThrow(() -> new Exception(
+                        "No se encontro un Pago con transaccionExternaId: " + transaccionExternaId));
+
+        EstadoPago nuevoEstado = mapearEstadoStereum(statusRecibido);
+        log.info("Actualizando Pago id={} de estado {} a {}", pago.getId(), pago.getEstadoPago(), nuevoEstado);
+
+        pago.setEstadoPago(nuevoEstado);
+
+        if (nuevoEstado == EstadoPago.PAGADO) {
+            pago.setPagadoEn(OffsetDateTime.now());
+        }
+
+        pagoRepository.save(pago);
+        log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
+    }
+
+
+    // Mapea el status de Stereum al enum interno EstadoPago.
+
+    private EstadoPago mapearEstadoStereum(String statusStereum) {
+        if (statusStereum == null) {
+            return EstadoPago.PENDIENTE;
+        }
+        return switch (statusStereum.toUpperCase()) {
+            case "COMPLETED" -> EstadoPago.PAGADO;
+            case "FAILED", "EXPIRED" -> EstadoPago.ANULADO;
+            default -> EstadoPago.PENDIENTE;
+        };
     }
 
     @Transactional
@@ -111,8 +162,14 @@ public class PagoService {
         Pago pago = pagoRepository.findById(id)
                 .orElseThrow(() -> new Exception("Pago no encontrado con ID: " + id));
 
-        Venta venta = ventaRepository.findById(request.getVentaId())
-                .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + request.getVentaId()));
+        Venta venta;
+        if (request.getVentaId() != null) {
+            venta = ventaRepository.findById(request.getVentaId())
+                    .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + request.getVentaId()));
+        } else {
+            // Si el frontend no envia venta_id, conservamos la venta que el pago ya tenia
+            venta = pago.getVenta();
+        }
 
         Usuario usuario = null;
         if (request.getRegistradoPorUsuarioId() != null && !request.getRegistradoPorUsuarioId().isBlank()) {
