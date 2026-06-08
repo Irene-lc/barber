@@ -1,12 +1,16 @@
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.GenerarPagoRequestDto;
+import edu.upb.barber.repository.dto.request.PagoRequestDto;
 import edu.upb.barber.repository.dto.response.GenerarPagoResponseDto;
+import edu.upb.barber.repository.dto.response.PagoResponseDto;
 import edu.upb.barber.service.PagoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @AllArgsConstructor
@@ -27,8 +31,39 @@ public class PagoController {
         }
     }
 
+    @PostMapping
+    public ResponseEntity<PagoResponseDto> crear(@RequestBody PagoRequestDto request) {
+        try {
+            return ResponseEntity.ok(pagoService.crear(request));
+        } catch (Exception e) {
+            log.error("Error al crear Pago", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PagoResponseDto> actualizar(@PathVariable String id, @RequestBody PagoRequestDto request) {
+        try {
+            return ResponseEntity.ok(pagoService.update(id, request));
+        } catch (Exception e) {
+            log.error("Error al actualizar Pago", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable String id) {
+        try {
+            pagoService.delete(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error al eliminar Pago", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping
-    public ResponseEntity<java.util.List<edu.upb.barber.repository.entity.Pago>> listar() {
+    public ResponseEntity<List<PagoResponseDto>> listar() {
         try {
             return ResponseEntity.ok(pagoService.listar());
         } catch (Exception e) {
@@ -38,7 +73,7 @@ public class PagoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<edu.upb.barber.repository.entity.Pago> obtenerPorId(@PathVariable String id) {
+    public ResponseEntity<PagoResponseDto> obtenerPorId(@PathVariable String id) {
         try {
             return pagoService.findById(id)
                     .map(ResponseEntity::ok)

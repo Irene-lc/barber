@@ -3,6 +3,7 @@ package edu.upb.barber.service;
 import edu.upb.barber.repository.ClienteRepository;
 import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.dto.request.ClienteRequestDto;
+import edu.upb.barber.repository.dto.response.ClienteResponseDto;
 import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Empresa;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -22,37 +24,72 @@ public class ClienteService {
     private final EmpresaRepository empresaRepository;
 
     @Transactional(readOnly = true)
-    public List<Cliente> listar() {
-        return clienteRepository.findAll();
+    public List<ClienteResponseDto> listar() {
+        return clienteRepository.findAll().stream()
+                .map(ClienteResponseDto::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public Optional<Cliente> findById(String id) {
-        return clienteRepository.findById(id);
+    public Optional<ClienteResponseDto> findById(String id) {
+        return clienteRepository.findById(id)
+                .map(ClienteResponseDto::new);
     }
 
     @Transactional
-    public void save(Cliente cliente) {
-        clienteRepository.save(cliente);
-    }
+    public ClienteResponseDto save(ClienteRequestDto dto) throws Exception {
+        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+            throw new Exception("El campo nombre es requerido");
+        }
+        if (dto.getEmpresaId() == null || dto.getEmpresaId().isBlank()) {
+            throw new Exception("El campo empresa_id es requerido");
+        }
 
-    @Transactional
-    public void delete(String id) {
-        clienteRepository.deleteById(id);
-    }
-
-    @Transactional
-    public void save(ClienteRequestDto dto) throws Exception {
-
-        Empresa empresa = empresaRepository.findById(dto.getEmpresa())
-                .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresa()));
+        Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
+                .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
 
         Cliente cliente = new Cliente();
         cliente.setNombre(dto.getNombre());
         cliente.setTelefono(dto.getTelefono());
-        cliente.setEmail(dto.getCorreo());
-        cliente.setEmpresa(empresa);  // objeto completo, no solo el id
+        cliente.setEmail(dto.getEmail());
+        cliente.setDocumento(dto.getDocumento());
+        cliente.setNotas(dto.getNotas());
+        cliente.setEmpresa(empresa);
+        cliente.setActivo(dto.isActivo());
 
-        clienteRepository.save(cliente);
+        return new ClienteResponseDto(clienteRepository.save(cliente));
+    }
+
+    @Transactional
+    public ClienteResponseDto update(String clienteId, ClienteRequestDto dto) throws Exception {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new Exception("Cliente no encontrado con id: " + clienteId));
+
+        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+            throw new Exception("El campo nombre es requerido");
+        }
+
+        cliente.setNombre(dto.getNombre());
+        cliente.setTelefono(dto.getTelefono());
+        cliente.setEmail(dto.getEmail());
+        cliente.setDocumento(dto.getDocumento());
+        cliente.setNotas(dto.getNotas());
+        cliente.setActivo(dto.isActivo());
+
+        if (dto.getEmpresaId() != null && !dto.getEmpresaId().isBlank()) {
+            Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
+                    .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
+            cliente.setEmpresa(empresa);
+        }
+
+        return new ClienteResponseDto(clienteRepository.save(cliente));
+    }
+
+    @Transactional
+    public void delete(String id) throws Exception {
+        if (!clienteRepository.existsById(id)) {
+            throw new Exception("Cliente no encontrado con id: " + id);
+        }
+        clienteRepository.deleteById(id);
     }
 }
