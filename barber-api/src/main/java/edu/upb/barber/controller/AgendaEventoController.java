@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @AllArgsConstructor
@@ -42,7 +43,7 @@ public class AgendaEventoController {
     }
 
     @PostMapping
-    public ResponseEntity<AgendaEventoCreateResponseDto> crear(
+    public ResponseEntity<?> crear(
             @RequestBody AgendaEventoCreateRequestDto request
     ) {
         try {
@@ -50,12 +51,12 @@ public class AgendaEventoController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error al crear AgendaEvento", e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AgendaEventoCreateResponseDto> actualizar(
+    public ResponseEntity<?> actualizar(
             @PathVariable String id,
             @RequestBody AgendaEventoCreateRequestDto request
     ) {
@@ -64,7 +65,7 @@ public class AgendaEventoController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error al actualizar AgendaEvento", e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 

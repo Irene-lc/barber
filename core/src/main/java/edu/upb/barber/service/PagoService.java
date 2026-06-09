@@ -12,6 +12,7 @@ import edu.upb.barber.repository.entity.Pago;
 import edu.upb.barber.repository.entity.Venta;
 import edu.upb.barber.repository.entity.Usuario;
 import edu.upb.barber.repository.entity.enums.EstadoPago;
+import edu.upb.barber.repository.entity.enums.EstadoVenta;
 import edu.upb.barber.repository.entity.enums.MetodoPago;
 import edu.upb.barber.service.integracion.stereum.StereumChargeRequestDto;
 import edu.upb.barber.service.integracion.stereum.StereumChargeResponseDto;
@@ -21,7 +22,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +40,7 @@ public class PagoService {
     private final VentaRepository ventaRepository;
     private final UsuarioRepository usuarioRepository;
     private final StereumPayClient stereumPayClient;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public GenerarPagoResponseDto generarCobroQR(GenerarPagoRequestDto request) throws Exception {
@@ -80,6 +85,57 @@ public class PagoService {
         responseDto.setPaymentLink(stereumResponse.getPaymentLink());
 
         return responseDto;
+    }
+
+    @Transactional
+    public void procesarNotificacionStereum(String body) throws Exception {
+        JsonNode root = objectMapper.readTree(body);
+        String notificationType = text(root, "notificationType", "notification_type", "type");
+
+        if ("webhooks.test".equals(notificationType)) {
+            log.info("Webhook de prueba recibido desde Stereum");
+            return;
+        }
+
+        String transactionId = text(root, "transactionId", "transaction_id", "id");
+        if (transactionId == null && root.has("transaction")) {
+            transactionId = text(root.get("transaction"), "id", "transactionId", "transaction_id");
+        }
+        if (transactionId == null && root.has("data")) {
+            transactionId = text(root.get("data"), "id", "transactionId", "transaction_id");
+        }
+
+        if (transactionId == null || transactionId.isBlank()) {
+            log.warn("Webhook Stereum sin transaction id. notificationType={}, body={}", notificationType, body);
+            return;
+        }
+
+        Optional<Pago> pagoOptional = pagoRepository.findByTransaccionExternaId(transactionId);
+        if (pagoOptional.isEmpty()) {
+            log.warn("Webhook Stereum para transaccion no registrada: {}", transactionId);
+            return;
+        }
+
+        Pago pago = pagoOptional.get();
+        String status = text(root, "status", "state", "transactionStatus", "transaction_status");
+        if (status == null && root.has("transaction")) {
+            status = text(root.get("transaction"), "status", "state", "transactionStatus", "transaction_status");
+        }
+        if (status == null && root.has("data")) {
+            status = text(root.get("data"), "status", "state", "transactionStatus", "transaction_status");
+        }
+
+        if (esPagoConfirmado(notificationType, status)) {
+            pago.setEstadoPago(EstadoPago.PAGADO);
+            pago.setPagadoEn(OffsetDateTime.now());
+            pago.getVenta().setEstado(EstadoVenta.COBRADA);
+            pagoRepository.save(pago);
+            log.info("Pago {} confirmado por webhook Stereum. Transaccion {}", pago.getId(), transactionId);
+            return;
+        }
+
+        log.info("Webhook Stereum recibido sin confirmacion de pago. transactionId={}, notificationType={}, status={}",
+                transactionId, notificationType, status);
     }
 
     @Transactional
@@ -149,5 +205,32 @@ public class PagoService {
     @Transactional(readOnly = true)
     public Optional<PagoResponseDto> findById(String id) {
         return pagoRepository.findById(id).map(PagoResponseDto::new);
+    }
+
+    private boolean esPagoConfirmado(String notificationType, String status) {
+        if (status == null || status.isBlank()) {
+            return "transactions.outbound".equals(notificationType) || "transactions.inbound".equals(notificationType);
+        }
+
+        String normalized = status.trim().toUpperCase();
+        return normalized.equals("PAID")
+                || normalized.equals("PAGADO")
+                || normalized.equals("COMPLETED")
+                || normalized.equals("CONFIRMED")
+                || normalized.equals("SUCCESS")
+                || normalized.equals("APPROVED");
+    }
+
+    private String text(JsonNode node, String... fieldNames) {
+        if (node == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            JsonNode value = node.get(fieldName);
+            if (value != null && !value.isNull()) {
+                return value.asText();
+            }
+        }
+        return null;
     }
 }

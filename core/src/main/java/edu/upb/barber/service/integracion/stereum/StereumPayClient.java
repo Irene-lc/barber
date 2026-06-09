@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-
+import org.json.JSONObject;
 import java.time.Duration;
 
 @Slf4j
@@ -30,6 +30,19 @@ public class StereumPayClient {
     public StereumChargeResponseDto createCharge(StereumChargeRequestDto request) throws Exception {
         RestClient restClient = create();
         ResponseEntity<StereumChargeResponseDto> response;
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("country", request.getCountry());
+        jsonObject.put("amount", request.getAmount());
+        jsonObject.put("currency", request.getCurrency());
+        jsonObject.put("network", request.getNetwork());
+        jsonObject.put("idempotency_key", request.getIdempotencyKey());
+        jsonObject.put("charge_reason", request.getChargeReason());
+        jsonObject.put("reservation_validity_time", request.getReservationValidityTime());  
+        JSONObject customerJson = new JSONObject();
+        customerJson.put("name", request.getCustomer().getName());
+        customerJson.put("lastname", request.getCustomer().getLastname());
+        customerJson.put("document_number", request.getCustomer().getDocumentNumber());
+        jsonObject.put("customer", customerJson);
 
         try {
             response = restClient.post()
@@ -37,7 +50,7 @@ public class StereumPayClient {
                     .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                     .header("Accept", MediaType.APPLICATION_JSON_VALUE)
                     .header("x-api-key", apiKey)
-                    .body(request)
+                    .body(jsonObject.toString())
                     .retrieve()
                     .toEntity(StereumChargeResponseDto.class);
         } catch (Exception e) {

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.List;
 
 public interface AgendaEventoEmpleadoRepository extends JpaRepository<AgendaEventoEmpleado, String> {
 
@@ -43,4 +44,6 @@ public interface AgendaEventoEmpleadoRepository extends JpaRepository<AgendaEven
     );
 
     void deleteByAgendaEventoId(String agendaEventoId);
+
+    List<AgendaEventoEmpleado> findByAgendaEventoId(String agendaEventoId);
 }

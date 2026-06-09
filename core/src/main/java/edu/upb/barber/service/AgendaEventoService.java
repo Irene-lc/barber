@@ -5,6 +5,8 @@ import edu.upb.barber.repository.dto.request.AgendaEventoCreateRequestDto;
 import edu.upb.barber.repository.dto.request.AgendaEventoDetalleCreateDto;
 import edu.upb.barber.repository.dto.request.AgendaEventoEmpleadoCreateDto;
 import edu.upb.barber.repository.dto.response.AgendaEventoCreateResponseDto;
+import edu.upb.barber.repository.dto.response.AgendaEventoDetalleResponseDto;
+import edu.upb.barber.repository.dto.response.AgendaEventoEmpleadoResponseDto;
 import edu.upb.barber.repository.dto.response.AgendaEventoResponseDto;
 import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.EstadoEvento;
@@ -208,14 +210,25 @@ public class AgendaEventoService {
     @Transactional(readOnly = true)
     public List<AgendaEventoResponseDto> listar() {
         return agendaEventoRepository.findAll().stream()
-                .map(AgendaEventoResponseDto::new)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public Optional<AgendaEventoResponseDto> findById(String id) {
         return agendaEventoRepository.findById(id)
-                .map(AgendaEventoResponseDto::new);
+                .map(this::toResponse);
+    }
+
+    private AgendaEventoResponseDto toResponse(AgendaEvento agendaEvento) {
+        AgendaEventoResponseDto response = new AgendaEventoResponseDto(agendaEvento);
+        response.setDetalles(agendaEventoDetalleRepository.findByAgendaEventoId(agendaEvento.getId()).stream()
+                .map(AgendaEventoDetalleResponseDto::new)
+                .collect(Collectors.toList()));
+        response.setEmpleados(agendaEventoEmpleadoRepository.findByAgendaEventoId(agendaEvento.getId()).stream()
+                .map(AgendaEventoEmpleadoResponseDto::new)
+                .collect(Collectors.toList()));
+        return response;
     }
 
     @Transactional

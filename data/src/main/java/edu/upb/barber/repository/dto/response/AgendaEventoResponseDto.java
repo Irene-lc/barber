@@ -7,6 +7,8 @@ import edu.upb.barber.repository.entity.enums.TipoEvento;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -39,6 +41,8 @@ public class AgendaEventoResponseDto {
     private OffsetDateTime inicio;
     private OffsetDateTime fin;
     private String notas;
+    private List<AgendaEventoDetalleResponseDto> detalles = new ArrayList<>();
+    private List<AgendaEventoEmpleadoResponseDto> empleados = new ArrayList<>();
 
     public AgendaEventoResponseDto(AgendaEvento ae) {
         this.id = ae.getId();
