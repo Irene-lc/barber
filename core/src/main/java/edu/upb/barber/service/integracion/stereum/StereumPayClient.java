@@ -2,6 +2,7 @@ package edu.upb.barber.service.integracion.stereum;
 
 import edu.upb.barber.service.exception.NotDataFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,25 @@ public class StereumPayClient {
 
     public StereumChargeResponseDto createCharge(StereumChargeRequestDto request) throws Exception {
         RestClient restClient = create();
-        ResponseEntity<StereumChargeResponseDto> response;
+
+        JSONObject jsonObject = new JSONObject();
+
+        jsonObject.put("country", request.getCountry());
+        jsonObject.put("amount", request.getAmount());
+        jsonObject.put("currency", request.getCurrency());
+        jsonObject.put("network", request.getNetwork());
+        jsonObject.put("idempotency_key", request.getIdempotencyKey());
+        jsonObject.put("charge_reason", request.getChargeReason());
+        jsonObject.put("reservation_validity_time", request.getReservationValidityTime());
+        JSONObject customerJson = new JSONObject();
+        customerJson.put("name", request.getCustomer().getName());
+        customerJson.put("lastname", request.getCustomer().getLastname());
+        customerJson.put("document_number", request.getCustomer().getDocumentNumber());
+        jsonObject.put("customer", customerJson);
+
+//        ResponseEntity<StereumChargeResponseDto> response;
+        ResponseEntity<String> response;
+
 
         try {
             response = restClient.post()
@@ -37,9 +56,11 @@ public class StereumPayClient {
                     .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                     .header("Accept", MediaType.APPLICATION_JSON_VALUE)
                     .header("x-api-key", apiKey)
-                    .body(request)
+//                    .body(request)
+                    .body(jsonObject.toString())
                     .retrieve()
-                    .toEntity(StereumChargeResponseDto.class);
+//                    .toEntity(StereumChargeResponseDto.class);
+                    .toEntity(String.class);
         } catch (Exception e) {
             log.error("Exception in Stereum createCharge: ", e);
             throw e;
@@ -49,7 +70,13 @@ public class StereumPayClient {
             throw new Exception("Error al generar el cobro QR. Status: " + response.getStatusCode().value());
         }
 
-        return response.getBody();
+        JSONObject jsonResponse = new JSONObject(response.getBody());
+        String pagoId = jsonResponse.getString("id");
+        StereumChargeResponseDto responseDto = new StereumChargeResponseDto();
+        responseDto.setId(pagoId);
+
+//        return response.getBody();
+        return responseDto;
     }
 
     public StereumVerifyResponseDto verifyPayment(String transactionId) throws Exception {

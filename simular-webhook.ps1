@@ -4,7 +4,7 @@ param (
 )
 
 # Llave que Stereum usa para firmar (la corta, que descubrimos antes)
-$apiKey = "6ea740c3-6db9-44ce-beda-c8e9a3038ed0"
+$apiKey = "4530204797cd482d96619053c0a84e8d665af20df4044165bf77f80c93b06afa0f320a9fffb345c7b88dfbd21fa413abbc42951f8a3f49818413d763639c06f2"
 
 # Obtener timestamp exacto en UTC (evita bugs de zona horaria de PowerShell)
 $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
@@ -56,7 +56,7 @@ $headers = @{
 }
 
 try {
-    $response = Invoke-RestMethod -Uri "https://salutary-straggler-shortwave.ngrok-free.dev" -Method Post -Headers $headers -Body $body
+    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/v1/stereum" -Method Post -Headers $headers -Body $body
     Write-Host "¡Exito! El webhook fue enviado y procesado por Spring Boot." -ForegroundColor Green
     Write-Host "Revisa tu base de datos o Postman para ver el estado 'PAGADO'." -ForegroundColor Green
 } catch {

@@ -8,6 +8,7 @@ import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
 import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
 import edu.upb.barber.service.exception.NotDataFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
@@ -35,15 +36,26 @@ public class SistemaA {
     public Sistema1AuthResponse auth(Sistema1AuthRequest request) throws Exception {
         RestClient restClient = create();
 
-        ResponseEntity<Sistema1AuthResponse> response;
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("username", request.getNombre());
+        jsonObject.put("passwortd", request.getPassword());
+
+//        ResponseEntity<Sistema1AuthResponse> response;
+        ResponseEntity<String> response;
         try {
             response = restClient.post()
                     .uri(urlBase + "/api/v1/auth/login")
                     .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                     .header("Accept", MediaType.APPLICATION_JSON_VALUE)
-                    .body(request)
+//                    .body(request)
+//                    .body("{\n" +
+//                            " \"username\":\"root\",\n" +
+//                            "\"password\":\"Abc123**\"\n" +
+//                            "}")
+                    .body(jsonObject.toString())
                     .retrieve()
-                    .toEntity(Sistema1AuthResponse.class);
+//                    .toEntity(Sistema1AuthResponse.class);
+                    .toEntity(String.class);
         } catch (NotDataFoundException e) {
             log.error("NotDataFoundException. {}", e.getMessage());
             throw e;
@@ -57,7 +69,12 @@ public class SistemaA {
             throw new Exception("Se genero error");
         }
 
-        return response.getBody();
+        JSONObject jsonResponse = new JSONObject(response.getBody());
+        String token = jsonResponse.getString("access_token");
+        Sistema1AuthResponse newResponse = new Sistema1AuthResponse();
+        newResponse.setAccessToken(token);
+//        return response.getBody();
+        return newResponse;
     }
 
     public List<EmpresaResponseDto> listarEmpresa(String token) throws Exception {
