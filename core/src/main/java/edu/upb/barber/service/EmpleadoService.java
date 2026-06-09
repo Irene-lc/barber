@@ -55,7 +55,6 @@ public class EmpleadoService {
         Empleado empleado = new Empleado();
         empleado.setNombre(dto.getNombre());
         empleado.setTelefono(dto.getTelefono());
-        empleado.setEmail(dto.getEmail());
         empleado.setEspecialidad(dto.getEspecialidad());
         empleado.setFotoUrl(dto.getFotoUrl());
         empleado.setEmpresa(empresa);
@@ -90,7 +89,6 @@ public class EmpleadoService {
 
         empleado.setNombre(dto.getNombre());
         empleado.setTelefono(dto.getTelefono());
-        empleado.setEmail(dto.getEmail());
         empleado.setEspecialidad(dto.getEspecialidad());
         empleado.setFotoUrl(dto.getFotoUrl());
 

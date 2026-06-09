@@ -43,7 +43,6 @@ public class EmpleadoResponseDto {
         this.nombre = empleado.getNombre();
         this.cargo = empleado.getCargo() != null ? empleado.getCargo().name() : null;
         this.telefono = empleado.getTelefono();
-        this.email = empleado.getEmail();
         this.especialidad = empleado.getEspecialidad();
         this.fotoUrl = empleado.getFotoUrl();
         if (empleado.getEmpresa() != null) {
