@@ -197,5 +197,9 @@ public class DataInitializer implements CommandLineRunner {
             "from empleado e where e.id not in (select empleado_id from empleado_sucursal)",
             sucursal.getId()
         );
-    }
+            // Usuarios faltantes
+
+
+
+        }
 }
