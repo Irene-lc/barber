@@ -19,6 +19,8 @@ import java.util.Optional;
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final LogService logService;
+
 
     @Transactional
     public void save(EmpresaRequestDto empresaRequestDto)
@@ -28,19 +30,29 @@ public class EmpresaService {
                 empresaRequestDto.getNombre())) {
 
             log.error("El campo nombre es null");
+            logService.error("Error al guardar empresa. El campo nombre null, LOG 1");
+
 
             throw new Exception(
                     "El campo nombre es null");
         }
 
+        Thread.sleep(5000);
+
+        logService.info("Validando empresa:" + empresaRequestDto.getNombre());
+
         if (StringUtil.isNullOrEmpty(
                 empresaRequestDto.getRazonSocial())) {
 
             log.error("El campo razon social es null");
+            logService.error("Error al guardar empresa. El campo Descripcion null, LOG 2");
+
 
             throw new Exception(
                     "El campo razon social es null");
         }
+
+        logService.info("Preparando para registrar empresa: " + empresaRequestDto.getNombre());
 
         if (StringUtil.isNullOrEmpty(
                 empresaRequestDto.getNit())) {
@@ -86,6 +98,8 @@ public class EmpresaService {
         }
 
         empresaRepository.save(empresa);
+        logService.info("Empresa registrada con exito: " + empresa.getNombre());
+
     }
 
     @Transactional(readOnly = true)
