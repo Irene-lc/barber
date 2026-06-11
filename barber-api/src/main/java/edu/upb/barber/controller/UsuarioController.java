@@ -44,13 +44,26 @@ public class UsuarioController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<Void> actualizar(@PathVariable("id") String usuarioId,
                                            @RequestBody UsuarioRequestDto usuario) {
+        try {
             this.usuarioService.update(usuarioId, usuario);
             return ResponseEntity.ok().build();
-
+        }catch (Exception e) {
+            log.error("Error al actualizar usuario", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
+
+//    @PutMapping("/{id}")
+//    public ResponseEntity<Void> actualizar(@PathVariable("id") String usuarioId,
+//                                           @RequestBody UsuarioRequestDto usuario) {
+//            this.usuarioService.update(usuarioId, usuario);
+//            return ResponseEntity.ok().build();
+//
+//    }
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
     public ResponseEntity<UsuarioResponseDto> obtenerPorId(@PathVariable("id") String usuarioId) {

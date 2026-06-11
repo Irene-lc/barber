@@ -99,31 +99,31 @@ public class UsuarioService {
 
     @Async
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void update(String usuarioId, UsuarioRequestDto usuarioRequestDto) {
+    public void update(String usuarioId, UsuarioRequestDto usuarioRequestDto) throws Exception {
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getNombre())) {
             log.error("Error al guardar usuario. El campo nombre es null");
-//            throw new Exception("El campo nombre es null");
+            throw new Exception("El campo nombre es null");
         }
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getEmail())) {
             log.error("Error al guardar usuario. El campo email es null");
-//            throw new Exception("El campo email es null");
+            throw new Exception("El campo email es null");
         }
 
         if (!isValidEmail(usuarioRequestDto.getEmail())) {
             log.error("Error al actualizar usuario. Formato de email inválido: {}", usuarioRequestDto.getEmail());
-//            throw new Exception("El formato del correo electrónico es inválido");
+            throw new Exception("El formato del correo electrónico es inválido");
         }
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
             log.error("Error al guardar usuario. El campo password es null");
-//            throw new Exception("El campo password es null");
+            throw new Exception("El campo password es null");
         }
 
         Optional<Usuario> optionalUsuario = this.usuarioRepository.findById(usuarioId);
         if (optionalUsuario.isEmpty()) {
-//            throw new Exception("No existe el usuario con el id: " + usuarioId);
+            throw new Exception("No existe el usuario con el id: " + usuarioId);
         }
 
         Usuario usuario = optionalUsuario.get();
@@ -136,17 +136,11 @@ public class UsuarioService {
         if (usuarioRequestDto.getActivo() != null) {
             usuario.setActivo(usuarioRequestDto.getActivo());
         }
-//        if (usuarioRequestDto.getEmpresaId() != null) {
-//            Optional<Empresa> empresa = empresaRepository
-//                    .findById(usuarioRequestDto.getEmpresaId());
-////                    .orElseThrow(() ->
-////                            new Exception("Empresa no encontrada"));
-//            usuario.setEmpresa((Empresa) empresa);
-//        }
         if (usuarioRequestDto.getEmpresaId() != null) {
             Empresa empresa = empresaRepository
                     .findById(usuarioRequestDto.getEmpresaId())
-                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+                    .orElseThrow(() ->
+                            new Exception("Empresa no encontrada"));
             usuario.setEmpresa(empresa);
         }
 
