@@ -14,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.session.SessionManagementFilter;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -35,6 +36,7 @@ public class WebSecurityConfiguration implements WebMvcConfigurer, Serializable 
                 .authorizeHttpRequests(
                         authorizationManagerRequestMatcherRegistry ->
                                 authorizationManagerRequestMatcherRegistry
+                                        .requestMatchers(RegexRequestMatcher.regexMatcher(".*v2.*")).denyAll()
                                         .requestMatchers("/swagger-ui/**",
                                                 "/v3/api-docs/**",
                                                 "/v3/api-docs",
@@ -72,6 +74,8 @@ public class WebSecurityConfiguration implements WebMvcConfigurer, Serializable 
         CorsConfiguration configuration = new CorsConfiguration();
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        System.out.println("");
+        System.out.println("");
         return source;
     }
 

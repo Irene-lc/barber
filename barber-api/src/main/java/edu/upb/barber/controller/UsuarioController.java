@@ -47,13 +47,9 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<Void> actualizar(@PathVariable("id") String usuarioId,
                                            @RequestBody UsuarioRequestDto usuario) {
-        try {
             this.usuarioService.update(usuarioId, usuario);
             return ResponseEntity.ok().build();
-        }catch (Exception e) {
-            log.error("Error al actualizar usuario", e);
-            return ResponseEntity.internalServerError().build();
-        }
+
     }
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
