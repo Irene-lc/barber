@@ -76,6 +76,18 @@ public class EmpresaController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/async/{id}")
+    public ResponseEntity<Void> actualizarAsync(@PathVariable("id") String empresaId,
+                                                @RequestBody EmpresaRequestDto empresa) {
+        try {
+            this.empresaService.updateAsync(empresaId, empresa);
+            return ResponseEntity.accepted().build();
+        } catch (Exception e) {
+            log.error("Error al iniciar actualización asíncrona de empresa", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
     @GetMapping("/{id}")
     public ResponseEntity<EmpresaResponseDto> obtenerPorId(@PathVariable("id") String empresaId) {
         try {

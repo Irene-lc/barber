@@ -37,7 +37,6 @@ public class JwtTokenProvider implements Serializable {
     private UsuarioService userService;
 
 
-
     @PostConstruct
     protected void init() {
         secretKeyByte = Base64.getDecoder().decode(secretKey);
@@ -117,7 +116,7 @@ public class JwtTokenProvider implements Serializable {
         }
     }
 
-    public  Date plusMinutes(Date date, int minutesToAdd) {
+    public Date plusMinutes(Date date, int minutesToAdd) {
         Calendar calDateStart = Calendar.getInstance();
         calDateStart.setTime(date);
         calDateStart.add(Calendar.MINUTE, minutesToAdd);

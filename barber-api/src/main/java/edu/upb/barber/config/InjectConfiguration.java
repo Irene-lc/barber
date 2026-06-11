@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.Authentication;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
+@EnableAsync
 public class InjectConfiguration {
     @Value("${async.core-pool-size:5}")
     private int corePoolSize;

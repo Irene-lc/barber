@@ -33,7 +33,6 @@ public class LogService {
 
 
     @Async
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
 
     public void error(String message) {

@@ -105,3 +105,4 @@ public class StereumPayClient {
         return RestClient.builder().requestFactory(clientHttpRequestFactory).build();
     }
 }
+
