@@ -61,6 +61,16 @@ public class JwtTokenProvider implements Serializable {
                 .signWith(secretKey)
                 .compact();
 
+        // Extraer datos de la empresa del usuario (puede ser null para SUPER_ADMIN)
+        String tipoEmpresa = null;
+        String empresaId = null;
+        if (user.getEmpresa() != null) {
+            tipoEmpresa = user.getEmpresa().getTipoEmpresa() != null
+                    ? user.getEmpresa().getTipoEmpresa().name()
+                    : null;
+            empresaId = user.getEmpresa().getId();
+        }
+
         return OKAuthDto.builder()
                 .accessToken(token)
                 .idToken(token)
@@ -70,6 +80,8 @@ public class JwtTokenProvider implements Serializable {
                 .expiresAt(validity.getTime())
                 .username(user.getEmail())
                 .rol(user.getRol().name())
+                .tipoEmpresa(tipoEmpresa)
+                .empresaId(empresaId)
                 .build();
     }
 

@@ -1,9 +1,11 @@
 package edu.upb.barber.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -14,6 +16,13 @@ import java.util.Optional;
 @Slf4j
 @Configuration
 public class InjectConfiguration {
+
+    @Value("${async.core-pool-size:5}")
+    private int corePoolSize;
+    @Value("${async.max-pool-size:5}")
+    private int maxPoolSize;
+    @Value("${async.queue-capacity:10}")
+    private int queueCapacity;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -41,4 +50,14 @@ public class InjectConfiguration {
         };
     }
 
+    @Bean(name = "taskLog")
+    public ThreadPoolTaskExecutor myTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize); // Número de hilos que siempre estarán activos
+        executor.setMaxPoolSize(maxPoolSize); // Número máximo de hilos
+        executor.setQueueCapacity(queueCapacity); // Capacidad de la cola para tareas en espera
+        executor.setThreadNamePrefix("TaskLog-");
+        executor.initialize();
+        return executor;
+    }
 }

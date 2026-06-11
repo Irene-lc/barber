@@ -18,13 +18,16 @@ public class UserDetailsServiceImpl implements org.springframework.security.core
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario authUser = this.userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("No existe el usuario con email: " + email));
-        String password = authUser.getPassword();
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        // Intentar por email primero; si no, por nombre de usuario
+        Usuario authUser = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByNombreIgnoreCase(identifier))
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "No existe el usuario con email o nombre: " + identifier));
+
         return new org.springframework.security.core.userdetails.User(
-                authUser.getEmail(),
-                password,
+                authUser.getEmail(),   // usamos email como principal canónico
+                authUser.getPassword(),
                 authUser.isEnabled(),
                 true,
                 authUser.isAccountNonExpired(),
