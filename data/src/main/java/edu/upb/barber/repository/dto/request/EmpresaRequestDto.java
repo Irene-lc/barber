@@ -1,6 +1,7 @@
 package edu.upb.barber.repository.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import edu.upb.barber.repository.entity.enums.TipoEmpresa;
 import lombok.*;
 
 @Builder
@@ -22,4 +23,7 @@ public class EmpresaRequestDto {
     private String email;
 
     private Boolean activo;
+
+    @JsonProperty("tipo_empresa")
+    private TipoEmpresa tipoEmpresa;
 }

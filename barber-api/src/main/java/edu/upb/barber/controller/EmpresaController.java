@@ -21,6 +21,7 @@ public class EmpresaController {
 
     private final EmpresaService empresaService;
 
+
 //    @Secured({"SUPER_ADMIN", "ADMIN_EMPREESA"})
     @GetMapping
     public ResponseEntity<List<EmpresaResponseDto>> empresas() {
@@ -65,17 +66,29 @@ public class EmpresaController {
                     .build();
         }
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<Void> actualizar(@PathVariable("id") String empresaId,
                                            @RequestBody EmpresaRequestDto empresa) {
         try {
             this.empresaService.update(empresaId, empresa);
             return ResponseEntity.ok().build();
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error al actualizar empresa", e);
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/async/{id}")
+    public ResponseEntity<Void> actualizarAsync(@PathVariable("id") String empresaId,
+                                                @RequestBody EmpresaRequestDto empresa) {
+        log.info("Solicitud recibida");
+
+        empresaService.actualizarAsync(empresaId, empresa);
+
+        return ResponseEntity.accepted().build();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EmpresaResponseDto> obtenerPorId(@PathVariable("id") String empresaId) {
         try {

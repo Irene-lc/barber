@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @Slf4j
-@RequestMapping("/api/v1/usuarios")
+@RequestMapping("/api/v2/usuarios")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;

@@ -5,9 +5,12 @@ import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.dto.request.EmpresaRequestDto;
 import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
 import edu.upb.barber.repository.entity.Empresa;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -117,7 +120,7 @@ public class EmpresaService {
 
         Optional<Empresa> optionalEmpresa = this.empresaRepository.findById(empresaId);
         if (optionalEmpresa.isEmpty()) {
-            throw new Exception("No existe ek enoresa conn el id: " + empresaId);
+            throw new Exception("No existe la empresa con el id: " + empresaId);
         }
         Empresa empresa1 = optionalEmpresa.get();
 
@@ -141,5 +144,27 @@ public class EmpresaService {
         empresaRepository.deleteById(empresaId);
     }
 
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void actualizarAsync(String empresaId, EmpresaRequestDto dto) {
+        log.info("Iniciando actualización de empresa");
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> {
+                    log.error("Empresa no encontrada.");
+                    return new EntityNotFoundException("Empresa no encontrada con id: " + empresaId);
+                });
+
+        empresa.setNombre(dto.getNombre());
+        empresa.setRazonSocial(dto.getRazonSocial());
+        empresa.setNit(dto.getNit());
+        empresa.setTelefono(dto.getTelefono());
+        empresa.setEmail(dto.getEmail());
+        if (dto.getActivo() != null)      empresa.setActivo(dto.getActivo());
+        if (dto.getTipoEmpresa() != null) empresa.setTipoEmpresa(dto.getTipoEmpresa());
+
+        empresaRepository.save(empresa);
+        log.info("Empresa actualizada correctamente.");
+    }
 
 }

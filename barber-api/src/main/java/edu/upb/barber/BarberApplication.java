@@ -15,16 +15,17 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import java.util.List;
 import java.util.UUID;
 
+@EnableAsync
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @EnableJpaAuditing
 @SpringBootApplication
-
-public class BarberApplication{
+public class BarberApplication {
 
 	@Autowired
 	private SistemaA sistemaA;
