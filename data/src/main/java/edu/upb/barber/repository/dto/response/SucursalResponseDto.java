@@ -1,6 +1,7 @@
 package edu.upb.barber.repository.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import edu.upb.barber.repository.entity.enums.TipoEmpresa;
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,6 +19,9 @@ public class SucursalResponseDto {
 
     @JsonProperty("empresa_nombre")
     private String empresaNombre;
+
+    @JsonProperty("tipo_empresa")
+    private TipoEmpresa tipoEmpresa;
 
     private boolean activo;
 }

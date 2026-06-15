@@ -1,5 +1,6 @@
 package edu.upb.barber.service;
 
+import edu.upb.barber.repository.AgendaEventoRepository;
 import edu.upb.barber.repository.PagoRepository;
 import edu.upb.barber.repository.VentaRepository;
 import edu.upb.barber.repository.UsuarioRepository;
@@ -12,7 +13,10 @@ import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Pago;
 import edu.upb.barber.repository.entity.Venta;
 import edu.upb.barber.repository.entity.Usuario;
+import edu.upb.barber.repository.entity.AgendaEvento;
+import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.repository.entity.enums.EstadoPago;
+import edu.upb.barber.repository.entity.enums.EstadoVenta;
 import edu.upb.barber.repository.entity.enums.MetodoPago;
 import edu.upb.barber.service.integracion.stereum.StereumChargeRequestDto;
 import edu.upb.barber.service.integracion.stereum.StereumChargeResponseDto;
@@ -36,6 +40,7 @@ public class PagoService {
 
     private final PagoRepository pagoRepository;
     private final VentaRepository ventaRepository;
+    private final AgendaEventoRepository agendaEventoRepository;
     private final UsuarioRepository usuarioRepository;
     private final StereumPayClient stereumPayClient;
 
@@ -116,6 +121,28 @@ public class PagoService {
         }
 
         pagoRepository.save(pago);
+        
+        // Propagar el estado a la Venta y la Agenda
+        if (pago.getVenta() != null) {
+            Venta venta = pago.getVenta();
+            if (nuevoEstado == EstadoPago.PAGADO) {
+                venta.setEstado(EstadoVenta.COBRADA);
+            } else if (nuevoEstado == EstadoPago.ANULADO) {
+                venta.setEstado(EstadoVenta.ANULADA);
+            }
+            ventaRepository.save(venta);
+
+            if (venta.getAgendaEvento() != null) {
+                AgendaEvento evento = venta.getAgendaEvento();
+                if (nuevoEstado == EstadoPago.PAGADO) {
+                    evento.setEstado(EstadoEvento.FINALIZADO);
+                } else if (nuevoEstado == EstadoPago.ANULADO) {
+                    evento.setEstado(EstadoEvento.CANCELADO);
+                }
+                agendaEventoRepository.save(evento);
+            }
+        }
+
         log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
     }
 
