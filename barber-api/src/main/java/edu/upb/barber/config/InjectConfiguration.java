@@ -1,9 +1,13 @@
 package edu.upb.barber.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -13,7 +17,16 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
+@EnableAsync
 public class InjectConfiguration {
+    @Value("${async.core-pool-size:5}")
+    private int corePoolSize;
+
+    @Value("${async.max-pool-size:5}")
+    private int maxPoolSize;
+
+    @Value("${async.queue-capacity:10}")
+    private int queueCapacity;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -33,12 +46,30 @@ public class InjectConfiguration {
 
             //User user = (User) authentication.getPrincipal();
             //try {
-             //   return Optional.ofNullable(user.getId());
+            //   return Optional.ofNullable(user.getId());
             //} catch (Exception e) {
-             //   return Optional.of("ADMIN");
+            //   return Optional.of("ADMIN");
             //}
             return Optional.of("ADMIN");
         };
+    }
+
+    @Bean(name = "taskLog")
+    public ThreadPoolTaskExecutor myTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize); // Número de hilos que siempre estarán activos
+        executor.setMaxPoolSize(maxPoolSize); // Número máximo de hilos
+        executor.setQueueCapacity(queueCapacity); // Capacidad de la cola para tareas en espera
+        executor.setThreadNamePrefix("Miguel-");
+        executor.initialize();
+        return executor;
+
+    }
+
+    @Scheduled(cron = "0 */1 * * * *")//expresion cron , la manera mas manejable de programar un job
+    //con esto le decimos que se ejecute cada minuto
+    public void listarEmpresas(){
+        log.info("INFO: " +  "listar todos las empresas");
     }
 
 }

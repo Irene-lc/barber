@@ -35,6 +35,7 @@ public class WebSecurityConfiguration implements WebMvcConfigurer, Serializable 
                 .authorizeHttpRequests(
                         authorizationManagerRequestMatcherRegistry ->
                                 authorizationManagerRequestMatcherRegistry
+
                                         .requestMatchers("/swagger-ui/**",
                                                 "/v3/api-docs/**",
                                                 "/v3/api-docs",
@@ -51,8 +52,8 @@ public class WebSecurityConfiguration implements WebMvcConfigurer, Serializable 
                                         .requestMatchers(HttpMethod.POST,"/api/v1/stereum").permitAll()
 //                                        .requestMatchers(HttpMethod.PUT, "/api/empresas/**").permitAll()
 
-
-                                        .requestMatchers("/error").anonymous() // <----- Fix
+                                        .requestMatchers("/api/v2/**").denyAll()
+                                        .requestMatchers("/error").anonymous()// <----- Fix
                                         .anyRequest().authenticated()
 
                 )

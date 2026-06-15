@@ -32,7 +32,7 @@ public class UsuarioController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
+    @PreAuthorize("hasAnyRole('ADMIN_EMPRESA')")
     public ResponseEntity<Void> guardar(
             @RequestBody UsuarioRequestDto usuario
     ) {
@@ -56,7 +56,7 @@ public class UsuarioController {
         }
     }
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
+    @PreAuthorize("hasAnyRole('ADMIN_EMPRESA')")
     public ResponseEntity<UsuarioResponseDto> obtenerPorId(@PathVariable("id") String usuarioId) {
         try {
             return usuarioService.findById(usuarioId)
@@ -70,7 +70,7 @@ public class UsuarioController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN_EMPRESA')")
+    @PreAuthorize("hasAnyRole('ADMIN_EMPRESA')")
     public ResponseEntity<Void> eliminar(@PathVariable("id") String usuarioId) {
         try {
             usuarioService.delete(usuarioId);

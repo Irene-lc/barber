@@ -150,7 +150,13 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public Optional<Usuario> findByUsername(String username) {
-        return usuarioRepository.findByEmail(username);
+        // Intentar por email primero
+        Optional<Usuario> byEmail = usuarioRepository.findByEmail(username);
+        if (byEmail.isPresent()) {
+            return byEmail;
+        }
+        // Si no encontró por email, intentar por nombre de usuario
+        return usuarioRepository.findByNombreIgnoreCase(username);
     }
     @Transactional
     public void delete(String usuarioId) throws Exception {

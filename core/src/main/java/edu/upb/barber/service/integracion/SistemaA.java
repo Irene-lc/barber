@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.json.JSONObject;
 
 import java.time.Duration;
 import java.util.List;
@@ -35,15 +36,24 @@ public class SistemaA {
     public Sistema1AuthResponse auth(Sistema1AuthRequest request) throws Exception {
         RestClient restClient = create();
 
-        ResponseEntity<Sistema1AuthResponse> response;
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("username", request.getNombre());
+        jsonObject.put("password", request.getPassword());
+
+//        ResponseEntity<Sistema1AuthResponse> response;
+        ResponseEntity<String> response;
         try {
             response = restClient.post()
                     .uri(urlBase + "/api/v1/auth/login")
                     .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                     .header("Accept", MediaType.APPLICATION_JSON_VALUE)
-                    .body(request)
+//                    .body("{\n" +
+//                            " \"username\":\"root\",\n" +
+//                            "\"password\":\"Abc123**\"\n" +
+//                            "}")
+                    .body(jsonObject.toString())
                     .retrieve()
-                    .toEntity(Sistema1AuthResponse.class);
+                    .toEntity(String.class);
         } catch (NotDataFoundException e) {
             log.error("NotDataFoundException. {}", e.getMessage());
             throw e;
@@ -57,7 +67,12 @@ public class SistemaA {
             throw new Exception("Se genero error");
         }
 
-        return response.getBody();
+        JSONObject jsonResponse = new JSONObject(response.getBody());
+        String token = jsonResponse.getString("access_token");
+
+        Sistema1AuthResponse newResponse = new Sistema1AuthResponse();
+        newResponse.setAccessToken(token);
+        return newResponse;
     }
 
     public List<EmpresaResponseDto> listarEmpresa(String token) throws Exception {

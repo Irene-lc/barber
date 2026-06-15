@@ -69,9 +69,13 @@ public class AuthController {
         }
 
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(data.nombre(), data.password()));
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getEmail(), data.password())
+            );
             log.info("Autenticado correctamente");
-            SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities()));
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities())
+            );
             return jwtTokenProvider.createToken(user);
         } catch (BadCredentialsException e) {
             log.error("BadCredentialsException. Causa:{} ", e.getMessage());

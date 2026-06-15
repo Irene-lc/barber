@@ -6,11 +6,15 @@ import edu.upb.barber.repository.dto.request.ClienteRequestDto;
 import edu.upb.barber.repository.dto.response.ClienteResponseDto;
 import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Empresa;
+import edu.upb.barber.repository.entity.Log;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -91,5 +95,16 @@ public class ClienteService {
             throw new Exception("Cliente no encontrado con id: " + id);
         }
         clienteRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ClienteResponseDto> findAllByOderByDataDesc(
+            LocalDateTime pInit,
+            LocalDateTime pEnd,
+            Pageable page) {
+
+        return clienteRepository
+                .findAllByOderByDataDesc(pInit, pEnd, page)
+                .map(ClienteResponseDto::new);
     }
 }
