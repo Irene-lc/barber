@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import edu.upb.barber.repository.entity.Usuario;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 @Slf4j
 @AllArgsConstructor
 @Service
@@ -25,7 +28,21 @@ public class SucursalService {
 
     @Transactional(readOnly = true)
     public List<SucursalResponseDto> listar() {
-        return sucursalRepository.findAll().stream()
+        Usuario currentUser = null;
+        if (SecurityContextHolder.getContext().getAuthentication() != null && 
+            SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
+            currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+
+        String empresaId = (currentUser != null && currentUser.getEmpresa() != null) 
+                ? currentUser.getEmpresa().getId() 
+                : null;
+
+        List<Sucursal> sucursales = (empresaId != null) 
+                ? sucursalRepository.findByEmpresaId(empresaId) 
+                : sucursalRepository.findAll();
+
+        return sucursales.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -43,6 +60,18 @@ public class SucursalService {
         }
         if (dto.getEmpresaId() == null || dto.getEmpresaId().isBlank()) {
             throw new Exception("El campo empresa_id es requerido");
+        }
+
+        Usuario currentUser = null;
+        if (SecurityContextHolder.getContext().getAuthentication() != null && 
+            SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
+            currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+
+        if (currentUser != null && currentUser.getEmpresa() != null) {
+            if (!currentUser.getEmpresa().getId().equals(dto.getEmpresaId())) {
+                throw new Exception("No tienes permiso para operar en la empresa especificada");
+            }
         }
 
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
@@ -74,6 +103,18 @@ public class SucursalService {
         sucursal.setTelefono(dto.getTelefono());
 
         if (dto.getEmpresaId() != null && !dto.getEmpresaId().isBlank()) {
+            Usuario currentUser = null;
+            if (SecurityContextHolder.getContext().getAuthentication() != null && 
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
+                currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            }
+
+            if (currentUser != null && currentUser.getEmpresa() != null) {
+                if (!currentUser.getEmpresa().getId().equals(dto.getEmpresaId())) {
+                    throw new Exception("No tienes permiso para operar en la empresa especificada");
+                }
+            }
+
             Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
                     .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
             sucursal.setEmpresa(empresa);
@@ -102,6 +143,7 @@ public class SucursalService {
                 .telefono(sucursal.getTelefono())
                 .empresaId(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getId() : null)
                 .empresaNombre(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getNombre() : null)
+                .tipoEmpresa(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getTipoEmpresa() : null)
                 .activo(sucursal.isActivo())
                 .build();
     }

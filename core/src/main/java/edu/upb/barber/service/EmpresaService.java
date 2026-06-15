@@ -7,7 +7,9 @@ import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
 import edu.upb.barber.repository.entity.Empresa;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -19,6 +21,8 @@ import java.util.Optional;
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final LogService logService;
+
 
     @Transactional
     public void save(EmpresaRequestDto empresaRequestDto)
@@ -28,19 +32,29 @@ public class EmpresaService {
                 empresaRequestDto.getNombre())) {
 
             log.error("El campo nombre es null");
+            logService.error("Error al guardar empresa. El campo nombre null, LOG 1");
+
 
             throw new Exception(
                     "El campo nombre es null");
         }
 
+        Thread.sleep(5000);
+
+        logService.info("Validando empresa:" + empresaRequestDto.getNombre());
+
         if (StringUtil.isNullOrEmpty(
                 empresaRequestDto.getRazonSocial())) {
 
             log.error("El campo razon social es null");
+            logService.error("Error al guardar empresa. El campo Descripcion null, LOG 2");
+
 
             throw new Exception(
                     "El campo razon social es null");
         }
+
+        logService.info("Preparando para registrar empresa: " + empresaRequestDto.getNombre());
 
         if (StringUtil.isNullOrEmpty(
                 empresaRequestDto.getNit())) {
@@ -86,6 +100,8 @@ public class EmpresaService {
         }
 
         empresaRepository.save(empresa);
+        logService.info("Empresa registrada con exito: " + empresa.getNombre());
+
     }
 
     @Transactional(readOnly = true)
@@ -103,10 +119,13 @@ public class EmpresaService {
         return empresaRepository.findById(id);
     }
 
+    @Async
     @Transactional
     public void update(String empresaId, EmpresaRequestDto empresa) throws Exception {
+
         if(StringUtil.isNullOrEmpty(empresa.getNombre())) {
             log.error("Error al guardar empresa. El campo nombre null");
+            logService.error("Error al guardar empresa. El campo nombre null, LOG 3");
             throw new Exception("El campo nombre es null");
         }
 
@@ -117,7 +136,7 @@ public class EmpresaService {
 
         Optional<Empresa> optionalEmpresa = this.empresaRepository.findById(empresaId);
         if (optionalEmpresa.isEmpty()) {
-            throw new Exception("No existe ek enoresa conn el id: " + empresaId);
+            throw new Exception("No existe la empresa con el id: " + empresaId);
         }
         Empresa empresa1 = optionalEmpresa.get();
 
@@ -133,6 +152,45 @@ public class EmpresaService {
 
         this.empresaRepository.save(empresa1);
     }
+
+    @Async("taskLog")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void updateAsync(String empresaId, EmpresaRequestDto empresa) throws Exception {
+        logService.info("Async Intentando buscar empresa con ID: " + empresaId);
+
+        Optional<Empresa> optionalEmpresa = this.empresaRepository.findById(empresaId);
+        if (optionalEmpresa.isEmpty()) {
+            log.error("Empresa con ID tanto no existe.");
+            logService.error("Async Error al actualizar.");
+            throw new Exception("No existe la empresa con el id: " + empresaId);
+        }
+
+        Empresa empresa1 = optionalEmpresa.get();
+
+        if (StringUtil.isNullOrEmpty(empresa.getNombre())) {
+            log.error("Error al actualizar empresa. El campo nombre es null");
+            throw new Exception("El campo nombre es null");
+        }
+
+        if (StringUtil.isNullOrEmpty(empresa.getNit())) {
+            log.error("Error al actualizar empresa. El campo nit es null");
+            throw new Exception("El campo nit es null");
+        }
+
+        empresa1.setNit(empresa.getNit());
+        empresa1.setRazonSocial(empresa.getRazonSocial());
+        empresa1.setNombre(empresa.getNombre());
+        empresa1.setTelefono(empresa.getTelefono());
+        empresa1.setEmail(empresa.getEmail());
+
+        if (empresa.getActivo() != null) {
+            empresa1.setActivo(empresa.getActivo());
+        }
+
+        this.empresaRepository.save(empresa1);
+        logService.info("Async Empresa actualizada con éxito: " + empresa1.getNombre());
+    }
+
     @Transactional
     public void delete(String empresaId) throws Exception {
         if (!empresaRepository.existsById(empresaId)) {

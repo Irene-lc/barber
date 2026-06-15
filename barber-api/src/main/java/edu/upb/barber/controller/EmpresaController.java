@@ -4,12 +4,16 @@ import edu.upb.barber.repository.dto.request.EmpresaRequestDto;
 import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
 import edu.upb.barber.repository.entity.Usuario;
 import edu.upb.barber.service.EmpresaService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -50,16 +54,16 @@ public class EmpresaController {
     ) {
 
         try {
-
             empresaService.save(empresa);
-
             return ResponseEntity.ok().build();
 
-        } catch (Exception e) {
-
+        } catch (OperationException e) {
             log.error(
-                    "Error al guardar empresa", e);
-
+                    "Error al guardar empresa. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }catch (Exception e){
+            log.error(
+                    "Error inesperado al guardar empresa", e);
             return ResponseEntity
                     .internalServerError()
                     .build();
@@ -73,6 +77,18 @@ public class EmpresaController {
             return ResponseEntity.ok().build();
         }catch (Exception e) {
             log.error("Error al actualizar empresa", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/async/{id}")
+    public ResponseEntity<Void> actualizarAsync(@PathVariable("id") String empresaId,
+                                                @RequestBody EmpresaRequestDto empresa) {
+        try {
+            this.empresaService.updateAsync(empresaId, empresa);
+            return ResponseEntity.accepted().build();
+        } catch (Exception e) {
+            log.error("Error al iniciar actualización asíncrona de empresa", e);
             return ResponseEntity.internalServerError().build();
         }
     }

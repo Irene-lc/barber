@@ -1,11 +1,8 @@
 package edu.upb.barber.repository.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import edu.upb.barber.repository.entity.enums.MetodoPago;
+import edu.upb.barber.repository.entity.enums.TipoEmpresa;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
@@ -39,7 +36,9 @@ public class Empresa extends AuditableEntity {
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 
-
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 30)
+    private TipoEmpresa tipoEmpresa;
 
     @PrePersist
     @PreUpdate
