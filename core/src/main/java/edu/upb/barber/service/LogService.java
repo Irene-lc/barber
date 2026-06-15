@@ -5,10 +5,14 @@ import edu.upb.barber.repository.entity.Log;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.logging.LogLevel;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @AllArgsConstructor
@@ -55,5 +59,15 @@ public class LogService {
                         .message(message)
                         .build()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Log> findAllByOderByDataDesc(
+            LocalDateTime pInit,
+            LocalDateTime pEnd,
+            Pageable page) {
+
+        return repository.findAllByOderByDataDesc(
+                pInit, pEnd, page);
     }
 }

@@ -1,5 +1,6 @@
 package edu.upb.barber.repository.dto.response;
 
+import edu.upb.barber.repository.dto.request.ClienteRequestDto;
 import edu.upb.barber.repository.entity.Cliente;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,5 +29,8 @@ public class ClienteResponseDto {
         this.documento = cliente.getDocumento();
         this.notas = cliente.getNotas();
         this.activo = cliente.isActivo();
+    }
+
+    public ClienteResponseDto(ClienteRequestDto clienteRequestDto) {
     }
 }

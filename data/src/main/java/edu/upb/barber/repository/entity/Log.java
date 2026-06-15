@@ -12,7 +12,7 @@ import org.springframework.boot.logging.LogLevel;
 @Entity
 @NoArgsConstructor
 @Table(name = "logs")
-public class Log {
+public class Log extends AuditableEntity{
     @Id
     @UuidGenerator
     private String id;
