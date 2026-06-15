@@ -46,9 +46,6 @@ public class Empleado extends AuditableEntity {
     @Column(name = "telefono", length = 30)
     private String telefono;
 
-    @Column(name = "email", length = 120)
-    private String email;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "cargo", length = 30)
     private CargoEmpleado cargo;

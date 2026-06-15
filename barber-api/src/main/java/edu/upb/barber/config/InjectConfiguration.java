@@ -46,9 +46,9 @@ public class InjectConfiguration {
 
             //User user = (User) authentication.getPrincipal();
             //try {
-             //   return Optional.ofNullable(user.getId());
+            //   return Optional.ofNullable(user.getId());
             //} catch (Exception e) {
-             //   return Optional.of("ADMIN");
+            //   return Optional.of("ADMIN");
             //}
             return Optional.of("ADMIN");
         };
