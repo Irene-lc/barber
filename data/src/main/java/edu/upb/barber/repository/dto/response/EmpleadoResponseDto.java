@@ -51,7 +51,7 @@ public class EmpleadoResponseDto {
         }
         if (empleado.getUsuario() != null) {
             this.usuarioId = empleado.getUsuario().getId();
-            this.usuarioNombre = empleado.getUsuario().getNombre();
+            this.usuarioNombre = empleado.getUsuario().getEmail();
         }
         this.disponible = empleado.isDisponible();
         this.activo = empleado.isActivo();
