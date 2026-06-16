@@ -12,12 +12,12 @@ import edu.upb.barber.repository.entity.ComboServicio;
 import edu.upb.barber.repository.entity.ComboServicioDetalle;
 import edu.upb.barber.repository.entity.Empresa;
 import edu.upb.barber.repository.entity.Servicio;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,6 +31,7 @@ public class ComboServicioService {
     private final ComboServicioDetalleRepository comboServicioDetalleRepository;
     private final EmpresaRepository empresaRepository;
     private final ServicioRepository servicioRepository;
+    private final LogService logService;
 
     @Transactional(readOnly = true)
     public List<ComboServicioResponseDto> listar() {
@@ -49,20 +50,28 @@ public class ComboServicioService {
     public ComboServicioResponseDto save(ComboServicioRequestDto dto) throws Exception {
 
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
-            throw new Exception("El campo nombre es requerido");
+            log.error("Error al guardar combo. El campo nombre es requerido");
+            logService.error("Error al guardar combo. El campo nombre es requerido");
+            throw new OperationException("El campo nombre es requerido");
         }
         if (dto.getPrecio() == null || dto.getPrecio().doubleValue() < 0) {
-            throw new Exception("El precio debe ser mayor o igual a cero");
+            log.error("Error al guardar combo. El precio debe ser mayor o igual a cero");
+            logService.error("Error al guardar combo. El precio debe ser mayor o igual a cero");
+            throw new OperationException("El precio debe ser mayor o igual a cero");
         }
         if (dto.getDuracionMinutos() == null || dto.getDuracionMinutos() <= 0) {
-            throw new Exception("La duracion debe ser mayor a cero");
+            log.error("Error al guardar combo. La duracion debe ser mayor a cero");
+            logService.error("Error al guardar combo. La duracion debe ser mayor a cero");
+            throw new OperationException("La duracion debe ser mayor a cero");
         }
         if (dto.getEmpresaId() == null || dto.getEmpresaId().isBlank()) {
-            throw new Exception("El campo empresa_id es requerido");
+            log.error("Error al guardar combo. El campo empresa_id es requerido");
+            logService.error("Error al guardar combo. El campo empresa_id es requerido");
+            throw new OperationException("El campo empresa_id es requerido");
         }
 
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
-                .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
+                .orElseThrow(() -> new OperationException("Empresa no encontrada con id: " + dto.getEmpresaId()));
 
         ComboServicio combo = new ComboServicio();
         combo.setEmpresa(empresa);
@@ -80,7 +89,7 @@ public class ComboServicioService {
         if (dto.getDetalles() != null) {
             for (ComboServicioDetalleRequestDto detDto : dto.getDetalles()) {
                 Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                        .orElseThrow(() -> new Exception("Servicio no encontrado con id: " + detDto.getServicioId()));
+                        .orElseThrow(() -> new OperationException("Servicio no encontrado con id: " + detDto.getServicioId()));
 
                 ComboServicioDetalle detalle = new ComboServicioDetalle();
                 detalle.setComboServicio(combo);
@@ -90,6 +99,7 @@ public class ComboServicioService {
             }
         }
 
+        logService.info("ComboServicio guardado exitosamente: " + dto.getNombre());
         return mapToResponse(combo);
     }
 
@@ -97,16 +107,22 @@ public class ComboServicioService {
     public ComboServicioResponseDto update(String comboId, ComboServicioRequestDto dto) throws Exception {
 
         ComboServicio combo = comboServicioRepository.findById(comboId)
-                .orElseThrow(() -> new Exception("ComboServicio no encontrado con id: " + comboId));
+                .orElseThrow(() -> new OperationException("ComboServicio no encontrado con id: " + comboId));
 
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
-            throw new Exception("El campo nombre es requerido");
+            log.error("Error al actualizar combo. El campo nombre es requerido");
+            logService.error("Error al actualizar combo. El campo nombre es requerido");
+            throw new OperationException("El campo nombre es requerido");
         }
         if (dto.getPrecio() == null || dto.getPrecio().doubleValue() < 0) {
-            throw new Exception("El precio debe ser mayor o igual a cero");
+            log.error("Error al actualizar combo. El precio debe ser mayor o igual a cero");
+            logService.error("Error al actualizar combo. El precio debe ser mayor o igual a cero");
+            throw new OperationException("El precio debe ser mayor o igual a cero");
         }
         if (dto.getDuracionMinutos() == null || dto.getDuracionMinutos() <= 0) {
-            throw new Exception("La duracion debe ser mayor a cero");
+            log.error("Error al actualizar combo. La duracion debe ser mayor a cero");
+            logService.error("Error al actualizar combo. La duracion debe ser mayor a cero");
+            throw new OperationException("La duracion debe ser mayor a cero");
         }
 
         combo.setNombre(dto.getNombre());
@@ -121,12 +137,11 @@ public class ComboServicioService {
         combo = comboServicioRepository.save(combo);
 
         if (dto.getDetalles() != null) {
-            // Eliminar detalles previos
             comboServicioDetalleRepository.deleteByComboServicioId(comboId);
 
             for (ComboServicioDetalleRequestDto detDto : dto.getDetalles()) {
                 Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                        .orElseThrow(() -> new Exception("Servicio no encontrado con id: " + detDto.getServicioId()));
+                        .orElseThrow(() -> new OperationException("Servicio no encontrado con id: " + detDto.getServicioId()));
 
                 ComboServicioDetalle detalle = new ComboServicioDetalle();
                 detalle.setComboServicio(combo);
@@ -136,16 +151,20 @@ public class ComboServicioService {
             }
         }
 
+        logService.info("ComboServicio actualizado exitosamente: " + comboId);
         return mapToResponse(combo);
     }
 
     @Transactional
     public void delete(String id) throws Exception {
         if (!comboServicioRepository.existsById(id)) {
-            throw new Exception("ComboServicio no encontrado con id: " + id);
+            log.error("Error al eliminar combo. No encontrado con id: {}", id);
+            logService.error("Error al eliminar combo. No encontrado con id: " + id);
+            throw new OperationException("ComboServicio no encontrado con id: " + id);
         }
         comboServicioDetalleRepository.deleteByComboServicioId(id);
         comboServicioRepository.deleteById(id);
+        logService.info("ComboServicio eliminado exitosamente: " + id);
     }
 
     private ComboServicioResponseDto mapToResponse(ComboServicio combo) {

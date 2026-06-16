@@ -8,7 +8,9 @@ import edu.upb.barber.repository.dto.response.MascotaResponseDto;
 import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Mascota;
 import edu.upb.barber.repository.entity.Raza;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class MascotaService {
@@ -23,6 +26,7 @@ public class MascotaService {
     private final MascotaRepository mascotaRepository;
     private final RazaRepository razaRepository;
     private final ClienteRepository clienteRepository;
+    private final LogService logService;
 
     @Transactional(readOnly = true)
     public List<MascotaResponseDto> listar() {
@@ -40,20 +44,26 @@ public class MascotaService {
     @Transactional
     public MascotaResponseDto guardar(MascotaRequestDto dto) throws Exception {
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
-            throw new Exception("El campo nombre es requerido");
+            log.error("Error al guardar mascota. El campo nombre es requerido");
+            logService.error("Error al guardar mascota. El campo nombre es requerido");
+            throw new OperationException("El campo nombre es requerido");
         }
         if (dto.getClienteId() == null || dto.getClienteId().isBlank()) {
-            throw new Exception("El campo cliente_id es requerido");
+            log.error("Error al guardar mascota. El campo cliente_id es requerido");
+            logService.error("Error al guardar mascota. El campo cliente_id es requerido");
+            throw new OperationException("El campo cliente_id es requerido");
         }
         if (dto.getRazaId() == null || dto.getRazaId().isBlank()) {
-            throw new Exception("El campo raza_id es requerido");
+            log.error("Error al guardar mascota. El campo raza_id es requerido");
+            logService.error("Error al guardar mascota. El campo raza_id es requerido");
+            throw new OperationException("El campo raza_id es requerido");
         }
 
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                .orElseThrow(() -> new Exception("Cliente no encontrado con id: " + dto.getClienteId()));
+                .orElseThrow(() -> new OperationException("Cliente no encontrado con id: " + dto.getClienteId()));
 
         Raza raza = razaRepository.findById(dto.getRazaId())
-                .orElseThrow(() -> new Exception("Raza no encontrada con id: " + dto.getRazaId()));
+                .orElseThrow(() -> new OperationException("Raza no encontrada con id: " + dto.getRazaId()));
 
         Mascota mascota = new Mascota();
         mascota.setNombre(dto.getNombre());
@@ -63,29 +73,32 @@ public class MascotaService {
             mascota.setActivo(dto.getActivo());
         }
 
+        logService.info("Mascota guardada exitosamente: " + dto.getNombre());
         return mapToResponse(mascotaRepository.save(mascota));
     }
 
     @Transactional
     public MascotaResponseDto update(String mascotaId, MascotaRequestDto dto) throws Exception {
         Mascota mascota = mascotaRepository.findById(mascotaId)
-                .orElseThrow(() -> new Exception("Mascota no encontrada con id: " + mascotaId));
+                .orElseThrow(() -> new OperationException("Mascota no encontrada con id: " + mascotaId));
 
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
-            throw new Exception("El campo nombre es requerido");
+            log.error("Error al actualizar mascota. El campo nombre es requerido");
+            logService.error("Error al actualizar mascota. El campo nombre es requerido");
+            throw new OperationException("El campo nombre es requerido");
         }
 
         mascota.setNombre(dto.getNombre());
 
         if (dto.getClienteId() != null && !dto.getClienteId().isBlank()) {
             Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                    .orElseThrow(() -> new Exception("Cliente no encontrado con id: " + dto.getClienteId()));
+                    .orElseThrow(() -> new OperationException("Cliente no encontrado con id: " + dto.getClienteId()));
             mascota.setCliente(cliente);
         }
 
         if (dto.getRazaId() != null && !dto.getRazaId().isBlank()) {
             Raza raza = razaRepository.findById(dto.getRazaId())
-                    .orElseThrow(() -> new Exception("Raza no encontrada con id: " + dto.getRazaId()));
+                    .orElseThrow(() -> new OperationException("Raza no encontrada con id: " + dto.getRazaId()));
             mascota.setRaza(raza);
         }
 
@@ -93,15 +106,19 @@ public class MascotaService {
             mascota.setActivo(dto.getActivo());
         }
 
+        logService.info("Mascota actualizada exitosamente: " + mascotaId);
         return mapToResponse(mascotaRepository.save(mascota));
     }
 
     @Transactional
     public void eliminar(String id) throws Exception {
         if (!mascotaRepository.existsById(id)) {
-            throw new Exception("Mascota no encontrada con id: " + id);
+            log.error("Error al eliminar mascota. No encontrada con id: {}", id);
+            logService.error("Error al eliminar mascota. No encontrada con id: " + id);
+            throw new OperationException("Mascota no encontrada con id: " + id);
         }
         mascotaRepository.deleteById(id);
+        logService.info("Mascota eliminada exitosamente: " + id);
     }
 
     private MascotaResponseDto mapToResponse(Mascota mascota) {

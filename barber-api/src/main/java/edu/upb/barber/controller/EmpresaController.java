@@ -31,20 +31,11 @@ public class EmpresaController {
 
         Usuario user = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.info("Usuario autenticado: {}", user.getRol());
-
         try {
-
-            return ResponseEntity.ok(
-                    empresaService.listar());
-
+            return ResponseEntity.ok(empresaService.listar());
         } catch (Exception e) {
-
-            log.error(
-                    "Error al listar empresas", e);
-
-            return ResponseEntity
-                    .internalServerError()
-                    .build();
+            log.error("Error al listar empresas", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -52,21 +43,15 @@ public class EmpresaController {
     public ResponseEntity<Void> guardar(
             @RequestBody EmpresaRequestDto empresa
     ) {
-
         try {
             empresaService.save(empresa);
             return ResponseEntity.ok().build();
-
         } catch (OperationException e) {
-            log.error(
-                    "Error al guardar empresa. Message: {}", e.getMessage());
+            log.error("Error al guardar empresa. Message: {}", e.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }catch (Exception e){
-            log.error(
-                    "Error inesperado al guardar empresa", e);
-            return ResponseEntity
-                    .internalServerError()
-                    .build();
+            log.error("Error inesperado al guardar empresa", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
     @PutMapping("/{id}")

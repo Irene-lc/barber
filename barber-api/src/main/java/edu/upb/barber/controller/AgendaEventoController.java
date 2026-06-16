@@ -5,10 +5,13 @@ import edu.upb.barber.repository.dto.response.AgendaEventoCreateResponseDto;
 import edu.upb.barber.repository.dto.response.AgendaEventoResponseDto;
 import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.service.AgendaEventoService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -49,9 +52,12 @@ public class AgendaEventoController {
         try {
             AgendaEventoCreateResponseDto response = agendaEventoService.crear(request);
             return ResponseEntity.ok(response);
+        } catch (OperationException e) {
+            log.error("Error al crear AgendaEvento. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al crear AgendaEvento", e);
-            return ResponseEntity.badRequest().build();
+            log.error("Error inesperado al crear AgendaEvento", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -63,9 +69,12 @@ public class AgendaEventoController {
         try {
             AgendaEventoCreateResponseDto response = agendaEventoService.update(id, request);
             return ResponseEntity.ok(response);
+        } catch (OperationException e) {
+            log.error("Error al actualizar AgendaEvento. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar AgendaEvento", e);
-            return ResponseEntity.badRequest().build();
+            log.error("Error inesperado al actualizar AgendaEvento", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -74,8 +83,11 @@ public class AgendaEventoController {
         try {
             agendaEventoService.delete(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar AgendaEvento. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar AgendaEvento", e);
+            log.error("Error inesperado al eliminar AgendaEvento", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -87,9 +99,12 @@ public class AgendaEventoController {
     ) {
         try {
             return ResponseEntity.ok(agendaEventoService.actualizarEstado(id, nuevoEstado));
+        } catch (OperationException e) {
+            log.error("Error al actualizar estado de AgendaEvento. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar estado de AgendaEvento", e);
-            return ResponseEntity.badRequest().build();
+            log.error("Error inesperado al actualizar estado de AgendaEvento", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

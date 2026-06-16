@@ -7,6 +7,7 @@ import edu.upb.barber.repository.dto.request.UsuarioRequestDto;
 import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
 import edu.upb.barber.repository.entity.Empresa;
 import edu.upb.barber.repository.entity.Usuario;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -24,28 +25,33 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final EmpresaRepository empresaRepository;
+    private final LogService logService;
 
     @Transactional
     public void save(UsuarioRequestDto usuarioRequestDto) throws Exception {
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getNombre())) {
             log.error("Error al guardar usuario. El campo nombre es null");
-            throw new Exception("El campo nombre es null");
+            logService.error("Error al guardar usuario. El campo nombre es null");
+            throw new OperationException("El campo nombre es null");
         }
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getEmail())) {
             log.error("Error al guardar usuario. El campo email es null");
-            throw new Exception("El campo email es null");
+            logService.error("Error al guardar usuario. El campo email es null");
+            throw new OperationException("El campo email es null");
         }
 
         if (!isValidEmail(usuarioRequestDto.getEmail())) {
             log.error("Error al guardar usuario. Formato de email inválido: {}", usuarioRequestDto.getEmail());
-            throw new Exception("El formato del correo electrónico es inválido");
+            logService.error("Error al guardar usuario. Formato de email inválido: " + usuarioRequestDto.getEmail());
+            throw new OperationException("El formato del correo electrónico es inválido");
         }
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
             log.error("Error al guardar usuario. El campo password es null");
-            throw new Exception("El campo password es null");
+            logService.error("Error al guardar usuario. El campo password es null");
+            throw new OperationException("El campo password es null");
         }
 
         Optional<Usuario> usuarioExistente =
@@ -53,7 +59,8 @@ public class UsuarioService {
 
         if (usuarioExistente.isPresent()) {
             log.error("Ya existe un usuario con ese email");
-            throw new Exception("Ya existe un usuario con ese email");
+            logService.error("Error al guardar usuario. Ya existe un usuario con ese email: " + usuarioRequestDto.getEmail());
+            throw new OperationException("Ya existe un usuario con ese email");
         }
 
         Usuario usuario = new Usuario();
@@ -62,7 +69,6 @@ public class UsuarioService {
         usuario.setApellido(usuarioRequestDto.getApellido());
         usuario.setEmail(usuarioRequestDto.getEmail());
 
-        // luego puedes encriptarlo con BCrypt
         usuario.setPasswordHash(usuarioRequestDto.getPassword());
 
         usuario.setRol(usuarioRequestDto.getRol());
@@ -75,13 +81,13 @@ public class UsuarioService {
 
             Empresa empresa = empresaRepository
                     .findById(usuarioRequestDto.getEmpresaId())
-                    .orElseThrow(() ->
-                            new Exception("Empresa no encontrada"));
+                    .orElseThrow(() -> new OperationException("Empresa no encontrada"));
 
             usuario.setEmpresa(empresa);
         }
 
         usuarioRepository.save(usuario);
+        logService.info("Usuario guardado exitosamente: " + usuarioRequestDto.getEmail());
     }
 
     @Transactional(readOnly = true)
@@ -102,28 +108,33 @@ public class UsuarioService {
     public void update(String usuarioId, UsuarioRequestDto usuarioRequestDto) throws Exception {
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getNombre())) {
-            log.error("Error al guardar usuario. El campo nombre es null");
-            throw new Exception("El campo nombre es null");
+            log.error("Error al actualizar usuario. El campo nombre es null");
+            logService.error("Error al actualizar usuario. El campo nombre es null");
+            throw new OperationException("El campo nombre es null");
         }
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getEmail())) {
-            log.error("Error al guardar usuario. El campo email es null");
-            throw new Exception("El campo email es null");
+            log.error("Error al actualizar usuario. El campo email es null");
+            logService.error("Error al actualizar usuario. El campo email es null");
+            throw new OperationException("El campo email es null");
         }
 
         if (!isValidEmail(usuarioRequestDto.getEmail())) {
             log.error("Error al actualizar usuario. Formato de email inválido: {}", usuarioRequestDto.getEmail());
-            throw new Exception("El formato del correo electrónico es inválido");
+            logService.error("Error al actualizar usuario. Formato de email inválido: " + usuarioRequestDto.getEmail());
+            throw new OperationException("El formato del correo electrónico es inválido");
         }
 
         if (StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
-            log.error("Error al guardar usuario. El campo password es null");
-            throw new Exception("El campo password es null");
+            log.error("Error al actualizar usuario. El campo password es null");
+            logService.error("Error al actualizar usuario. El campo password es null");
+            throw new OperationException("El campo password es null");
         }
 
         Optional<Usuario> optionalUsuario = this.usuarioRepository.findById(usuarioId);
         if (optionalUsuario.isEmpty()) {
-            throw new Exception("No existe el usuario con el id: " + usuarioId);
+            logService.error("Error al actualizar usuario. No existe el usuario con id: " + usuarioId);
+            throw new OperationException("No existe el usuario con el id: " + usuarioId);
         }
 
         Usuario usuario = optionalUsuario.get();
@@ -139,36 +150,15 @@ public class UsuarioService {
         if (usuarioRequestDto.getEmpresaId() != null) {
             Empresa empresa = empresaRepository
                     .findById(usuarioRequestDto.getEmpresaId())
-                    .orElseThrow(() ->
-                            new Exception("Empresa no encontrada"));
+                    .orElseThrow(() -> new OperationException("Empresa no encontrada"));
             usuario.setEmpresa(empresa);
         }
 
         Usuario user = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Usuario no encontrado: " + usuarioId));
-
-//        try {
-//            user.setNombre(usuarioRequestDto.getNombre());
-//            user.setApellido(usuarioRequestDto.getApellido());
-//            user.setPasswordHash(usuarioRequestDto.getPassword());
-//            user.setEmail(usuarioRequestDto.getEmail());
-//            user.setRol(usuarioRequestDto.getRol());
-//            if (usuarioRequestDto.getActivo() != null) {
-//                user.setActivo(usuarioRequestDto.getActivo());
-//            }
-//            if (usuarioRequestDto.getEmpresaId() != null) {
-//                Empresa empresa = empresaRepository
-//                        .findById(usuarioRequestDto.getEmpresaId())
-//                        .orElseThrow(() ->
-//                                new Exception("Empresa no encontrada"));
-//                user.setEmpresa(empresa);
-//            }
-//        } catch (Exception e) {
-//            throw e;
-//        }
+                .orElseThrow(() -> new OperationException("Usuario no encontrado: " + usuarioId));
 
         usuarioRepository.save(user);
+        logService.info("Usuario actualizado exitosamente: " + usuarioId);
     }
 
     @Transactional(readOnly = true)
@@ -178,20 +168,22 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public Optional<Usuario> findByUsername(String username) {
-        // Intentar por email primero
         Optional<Usuario> byEmail = usuarioRepository.findByEmail(username);
         if (byEmail.isPresent()) {
             return byEmail;
         }
-        // Si no encontró por email, intentar por nombre de usuario
         return usuarioRepository.findByNombreIgnoreCase(username);
     }
+
     @Transactional
     public void delete(String usuarioId) throws Exception {
         if (!usuarioRepository.existsById(usuarioId)) {
-            throw new Exception("Usuario no encontrado con id: " + usuarioId);
+            log.error("Error al eliminar usuario. No encontrado con id: {}", usuarioId);
+            logService.error("Error al eliminar usuario. No encontrado con id: " + usuarioId);
+            throw new OperationException("Usuario no encontrado con id: " + usuarioId);
         }
         usuarioRepository.deleteById(usuarioId);
+        logService.info("Usuario eliminado exitosamente: " + usuarioId);
     }
 
     private static final java.util.regex.Pattern EMAIL_PATTERN =

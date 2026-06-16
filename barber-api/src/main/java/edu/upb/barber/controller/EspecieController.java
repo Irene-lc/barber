@@ -3,10 +3,13 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.EspecieRequestDto;
 import edu.upb.barber.repository.dto.response.EspecieResponseDto;
 import edu.upb.barber.service.EspecieService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,8 +47,11 @@ public class EspecieController {
     public ResponseEntity<EspecieResponseDto> guardar(@RequestBody EspecieRequestDto dto) {
         try {
             return ResponseEntity.ok(especieService.guardar(dto));
+        } catch (OperationException e) {
+            log.error("Error al guardar Especie. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al guardar Especie", e);
+            log.error("Error inesperado al guardar Especie", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -57,8 +63,11 @@ public class EspecieController {
     ) {
         try {
             return ResponseEntity.ok(especieService.update(id, dto));
+        } catch (OperationException e) {
+            log.error("Error al actualizar Especie. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar Especie", e);
+            log.error("Error inesperado al actualizar Especie", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -68,8 +77,11 @@ public class EspecieController {
         try {
             especieService.eliminar(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar Especie. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Especie", e);
+            log.error("Error inesperado al eliminar Especie", e);
             return ResponseEntity.internalServerError().build();
         }
     }

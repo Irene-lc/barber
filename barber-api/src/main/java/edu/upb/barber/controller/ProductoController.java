@@ -3,10 +3,13 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.ProductoRequestDto;
 import edu.upb.barber.repository.dto.response.ProductoResponseDto;
 import edu.upb.barber.service.ProductoService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,8 +47,11 @@ public class ProductoController {
     public ResponseEntity<ProductoResponseDto> guardar(@RequestBody ProductoRequestDto dto) {
         try {
             return ResponseEntity.ok(productoService.save(dto));
+        } catch (OperationException e) {
+            log.error("Error al guardar Producto. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al guardar Producto", e);
+            log.error("Error inesperado al guardar Producto", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -57,8 +63,11 @@ public class ProductoController {
     ) {
         try {
             return ResponseEntity.ok(productoService.update(productoId, dto));
+        } catch (OperationException e) {
+            log.error("Error al actualizar Producto. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar Producto", e);
+            log.error("Error inesperado al actualizar Producto", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -68,8 +77,11 @@ public class ProductoController {
         try {
             productoService.delete(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar Producto. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Producto", e);
+            log.error("Error inesperado al eliminar Producto", e);
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -18,6 +18,7 @@ import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.repository.entity.enums.EstadoPago;
 import edu.upb.barber.repository.entity.enums.EstadoVenta;
 import edu.upb.barber.repository.entity.enums.MetodoPago;
+import edu.upb.barber.service.exception.OperationException;
 import edu.upb.barber.service.integracion.stereum.StereumChargeRequestDto;
 import edu.upb.barber.service.integracion.stereum.StereumChargeResponseDto;
 import edu.upb.barber.service.integracion.stereum.StereumCustomerDto;
@@ -43,15 +44,18 @@ public class PagoService {
     private final AgendaEventoRepository agendaEventoRepository;
     private final UsuarioRepository usuarioRepository;
     private final StereumPayClient stereumPayClient;
+    private final LogService logService;
 
     @Transactional
     public GenerarPagoResponseDto generarCobroQR(GenerarPagoRequestDto request) throws Exception {
         Venta venta = ventaRepository.findById(request.getVentaId())
-                .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + request.getVentaId()));
+                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + request.getVentaId()));
 
         Cliente cliente = venta.getCliente();
         if (cliente == null) {
-            throw new Exception("La venta no tiene un cliente asociado");
+            log.error("Error al generar cobro QR. La venta {} no tiene cliente asociado", request.getVentaId());
+            logService.error("Error al generar cobro QR. La venta " + request.getVentaId() + " no tiene cliente asociado");
+            throw new OperationException("La venta no tiene un cliente asociado");
         }
 
         StereumCustomerDto customerDto = new StereumCustomerDto();
@@ -81,6 +85,7 @@ public class PagoService {
 
         pago = pagoRepository.save(pago);
 
+        logService.info("Cobro QR generado exitosamente para venta: " + venta.getId());
         GenerarPagoResponseDto responseDto = new GenerarPagoResponseDto();
         responseDto.setPagoId(pago.getId());
         responseDto.setQrBase64(stereumResponse.getQrBase64());
@@ -89,11 +94,6 @@ public class PagoService {
         return responseDto;
     }
 
-    /**
-     * Procesa la notificacion del webhook
-     * Busca el pago por su ID externo y actualiza su estado segun el resultado
-     * Estados de Stereum: COMPLETED, FAILED, EXPIRED, PENDING
-     */
     @Transactional
     public void procesarNotificacionWebhook(NotificacionRequestDto notificacion) throws Exception {
         if (notificacion.getTransaction() == null || notificacion.getTransaction().getId() == null) {
@@ -108,7 +108,7 @@ public class PagoService {
                 transaccionExternaId, statusRecibido);
 
         Pago pago = pagoRepository.findByTransaccionExternaId(transaccionExternaId)
-                .orElseThrow(() -> new Exception(
+                .orElseThrow(() -> new OperationException(
                         "No se encontro un Pago con transaccionExternaId: " + transaccionExternaId));
 
         EstadoPago nuevoEstado = mapearEstadoStereum(statusRecibido);
@@ -121,8 +121,7 @@ public class PagoService {
         }
 
         pagoRepository.save(pago);
-        
-        // Propagar el estado a la Venta y la Agenda
+
         if (pago.getVenta() != null) {
             Venta venta = pago.getVenta();
             if (nuevoEstado == EstadoPago.PAGADO) {
@@ -144,10 +143,8 @@ public class PagoService {
         }
 
         log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
+        logService.info("Pago " + pago.getId() + " actualizado a estado " + nuevoEstado);
     }
-
-
-    // Mapea el status de Stereum al enum interno EstadoPago.
 
     private EstadoPago mapearEstadoStereum(String statusStereum) {
         if (statusStereum == null) {
@@ -163,12 +160,12 @@ public class PagoService {
     @Transactional
     public PagoResponseDto crear(PagoRequestDto request) throws Exception {
         Venta venta = ventaRepository.findById(request.getVentaId())
-                .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + request.getVentaId()));
+                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + request.getVentaId()));
 
         Usuario usuario = null;
         if (request.getRegistradoPorUsuarioId() != null && !request.getRegistradoPorUsuarioId().isBlank()) {
             usuario = usuarioRepository.findById(request.getRegistradoPorUsuarioId())
-                    .orElseThrow(() -> new Exception("Usuario no encontrado con ID: " + request.getRegistradoPorUsuarioId()));
+                    .orElseThrow(() -> new OperationException("Usuario no encontrado con ID: " + request.getRegistradoPorUsuarioId()));
         }
 
         Pago pago = new Pago();
@@ -181,27 +178,27 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
+        logService.info("Pago creado exitosamente: " + pago.getId());
         return new PagoResponseDto(pago);
     }
 
     @Transactional
     public PagoResponseDto update(String id, PagoRequestDto request) throws Exception {
         Pago pago = pagoRepository.findById(id)
-                .orElseThrow(() -> new Exception("Pago no encontrado con ID: " + id));
+                .orElseThrow(() -> new OperationException("Pago no encontrado con ID: " + id));
 
         Venta venta;
         if (request.getVentaId() != null) {
             venta = ventaRepository.findById(request.getVentaId())
-                    .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + request.getVentaId()));
+                    .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + request.getVentaId()));
         } else {
-            // Si el frontend no envia venta_id, conservamos la venta que el pago ya tenia
             venta = pago.getVenta();
         }
 
         Usuario usuario = null;
         if (request.getRegistradoPorUsuarioId() != null && !request.getRegistradoPorUsuarioId().isBlank()) {
             usuario = usuarioRepository.findById(request.getRegistradoPorUsuarioId())
-                    .orElseThrow(() -> new Exception("Usuario no encontrado con ID: " + request.getRegistradoPorUsuarioId()));
+                    .orElseThrow(() -> new OperationException("Usuario no encontrado con ID: " + request.getRegistradoPorUsuarioId()));
         }
 
         pago.setVenta(venta);
@@ -213,14 +210,16 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
+        logService.info("Pago actualizado exitosamente: " + id);
         return new PagoResponseDto(pago);
     }
 
     @Transactional
     public void delete(String id) throws Exception {
         Pago pago = pagoRepository.findById(id)
-                .orElseThrow(() -> new Exception("Pago no encontrado con ID: " + id));
+                .orElseThrow(() -> new OperationException("Pago no encontrado con ID: " + id));
         pagoRepository.delete(pago);
+        logService.info("Pago eliminado exitosamente: " + id);
     }
 
     @Transactional(readOnly = true)

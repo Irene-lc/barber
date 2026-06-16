@@ -3,10 +3,13 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.ServicioRequestDto;
 import edu.upb.barber.repository.dto.response.ServicioResponseDto;
 import edu.upb.barber.service.ServicioService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,8 +47,11 @@ public class ServicioController {
     public ResponseEntity<ServicioResponseDto> guardar(@RequestBody ServicioRequestDto dto) {
         try {
             return ResponseEntity.ok(servicioService.save(dto));
+        } catch (OperationException e) {
+            log.error("Error al guardar Servicio. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al guardar Servicio", e);
+            log.error("Error inesperado al guardar Servicio", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -57,8 +63,11 @@ public class ServicioController {
     ) {
         try {
             return ResponseEntity.ok(servicioService.update(servicioId, dto));
+        } catch (OperationException e) {
+            log.error("Error al actualizar Servicio. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar Servicio", e);
+            log.error("Error inesperado al actualizar Servicio", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -68,8 +77,11 @@ public class ServicioController {
         try {
             servicioService.delete(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar Servicio. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Servicio", e);
+            log.error("Error inesperado al eliminar Servicio", e);
             return ResponseEntity.internalServerError().build();
         }
     }

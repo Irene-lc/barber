@@ -8,6 +8,7 @@ import edu.upb.barber.repository.dto.response.VentaResponseDto;
 import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.EstadoVenta;
 import edu.upb.barber.repository.entity.enums.TipoItemVenta;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,17 +34,18 @@ public class VentaService {
     private final ComboServicioRepository comboServicioRepository;
     private final EmpleadoRepository empleadoRepository;
     private final InventarioSucursalRepository inventarioSucursalRepository;
+    private final LogService logService;
 
     @Transactional
     public VentaResponseDto crear(VentaRequestDto request) throws Exception {
 
         Sucursal sucursal = sucursalRepository.findById(request.getSucursalId())
-                .orElseThrow(() -> new Exception("Sucursal no encontrada con ID: " + request.getSucursalId()));
+                .orElseThrow(() -> new OperationException("Sucursal no encontrada con ID: " + request.getSucursalId()));
 
         Cliente cliente = null;
         if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
             cliente = clienteRepository.findById(request.getClienteId())
-                    .orElseThrow(() -> new Exception("Cliente no encontrado con ID: " + request.getClienteId()));
+                    .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
 
         Venta venta = new Venta();
@@ -78,20 +80,19 @@ public class VentaService {
 
                 if (detDto.getEmpleadoId() != null && !detDto.getEmpleadoId().isBlank()) {
                     Empleado empleado = empleadoRepository.findById(detDto.getEmpleadoId())
-                            .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + detDto.getEmpleadoId()));
+                            .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + detDto.getEmpleadoId()));
                     detalle.setEmpleado(empleado);
                 }
 
                 if (detDto.getTipoItem() == TipoItemVenta.SERVICIO) {
                     Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                            .orElseThrow(() -> new Exception("Servicio no encontrado con ID: " + detDto.getServicioId()));
+                            .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detDto.getServicioId()));
                     detalle.setServicio(servicio);
                 } else if (detDto.getTipoItem() == TipoItemVenta.PRODUCTO) {
                     Producto producto = productoRepository.findById(detDto.getProductoId())
-                            .orElseThrow(() -> new Exception("Producto no encontrado con ID: " + detDto.getProductoId()));
+                            .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
                     detalle.setProducto(producto);
 
-                    // Reducir stock del producto en la sucursal de la venta
                     Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
                             .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
                     if (invOpt.isPresent()) {
@@ -101,7 +102,7 @@ public class VentaService {
                     }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
                     ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
-                            .orElseThrow(() -> new Exception("Combo no encontrado con ID: " + detDto.getComboServicioId()));
+                            .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detDto.getComboServicioId()));
                     detalle.setComboServicio(combo);
                 }
 
@@ -109,7 +110,6 @@ public class VentaService {
             }
         }
 
-        // Si los montos no vinieron especificados en la cabecera, los calculamos del detalle
         if (request.getSubtotal() == null || request.getSubtotal().compareTo(BigDecimal.ZERO) == 0) {
             venta.setSubtotal(subtotalCalculado);
             BigDecimal descuentoTotal = request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO;
@@ -118,6 +118,7 @@ public class VentaService {
             venta = ventaRepository.save(venta);
         }
 
+        logService.info("Venta creada exitosamente: " + venta.getId());
         return mapToResponse(venta);
     }
 
@@ -146,18 +147,17 @@ public class VentaService {
     @Transactional
     public VentaResponseDto update(String id, VentaRequestDto request) throws Exception {
         Venta venta = ventaRepository.findById(id)
-                .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + id));
+                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + id));
 
         Sucursal sucursal = sucursalRepository.findById(request.getSucursalId())
-                .orElseThrow(() -> new Exception("Sucursal no encontrada con ID: " + request.getSucursalId()));
+                .orElseThrow(() -> new OperationException("Sucursal no encontrada con ID: " + request.getSucursalId()));
 
         Cliente cliente = null;
         if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
             cliente = clienteRepository.findById(request.getClienteId())
-                    .orElseThrow(() -> new Exception("Cliente no encontrado con ID: " + request.getClienteId()));
+                    .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
 
-        // Revertir el stock del detalle anterior antes de borrarlo
         List<VentaDetalle> detallesAnteriores = ventaDetalleRepository.findByVentaId(id);
         for (VentaDetalle det : detallesAnteriores) {
             if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
@@ -172,7 +172,6 @@ public class VentaService {
         }
         ventaDetalleRepository.deleteAll(detallesAnteriores);
 
-        // Guardar cabecera de venta
         venta.setSucursal(sucursal);
         venta.setCliente(cliente);
         venta.setSubtotal(request.getSubtotal() != null ? request.getSubtotal() : BigDecimal.ZERO);
@@ -203,20 +202,19 @@ public class VentaService {
 
                 if (detDto.getEmpleadoId() != null && !detDto.getEmpleadoId().isBlank()) {
                     Empleado empleado = empleadoRepository.findById(detDto.getEmpleadoId())
-                            .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + detDto.getEmpleadoId()));
+                            .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + detDto.getEmpleadoId()));
                     detalle.setEmpleado(empleado);
                 }
 
                 if (detDto.getTipoItem() == TipoItemVenta.SERVICIO) {
                     Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                            .orElseThrow(() -> new Exception("Servicio no encontrado con ID: " + detDto.getServicioId()));
+                            .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detDto.getServicioId()));
                     detalle.setServicio(servicio);
                 } else if (detDto.getTipoItem() == TipoItemVenta.PRODUCTO) {
                     Producto producto = productoRepository.findById(detDto.getProductoId())
-                            .orElseThrow(() -> new Exception("Producto no encontrado con ID: " + detDto.getProductoId()));
+                            .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
                     detalle.setProducto(producto);
 
-                    // Reducir stock del nuevo producto en la sucursal
                     Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
                             .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
                     if (invOpt.isPresent()) {
@@ -226,7 +224,7 @@ public class VentaService {
                     }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
                     ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
-                            .orElseThrow(() -> new Exception("Combo no encontrado con ID: " + detDto.getComboServicioId()));
+                            .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detDto.getComboServicioId()));
                     detalle.setComboServicio(combo);
                 }
 
@@ -242,15 +240,15 @@ public class VentaService {
             venta = ventaRepository.save(venta);
         }
 
+        logService.info("Venta actualizada exitosamente: " + id);
         return mapToResponse(venta);
     }
 
     @Transactional
     public void delete(String id) throws Exception {
         Venta venta = ventaRepository.findById(id)
-                .orElseThrow(() -> new Exception("Venta no encontrada con ID: " + id));
+                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + id));
 
-        // Revertir el stock del inventario
         List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(id);
         for (VentaDetalle det : detalles) {
             if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
@@ -266,5 +264,6 @@ public class VentaService {
 
         ventaDetalleRepository.deleteAll(detalles);
         ventaRepository.delete(venta);
+        logService.info("Venta eliminada exitosamente: " + id);
     }
 }

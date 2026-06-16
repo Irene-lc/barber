@@ -3,10 +3,13 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.RazaRequestDto;
 import edu.upb.barber.repository.dto.response.RazaResponseDto;
 import edu.upb.barber.service.RazaService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,8 +47,11 @@ public class RazaController {
     public ResponseEntity<RazaResponseDto> guardar(@RequestBody RazaRequestDto dto) {
         try {
             return ResponseEntity.ok(razaService.guardar(dto));
+        } catch (OperationException e) {
+            log.error("Error al guardar Raza. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al guardar Raza", e);
+            log.error("Error inesperado al guardar Raza", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -57,8 +63,11 @@ public class RazaController {
     ) {
         try {
             return ResponseEntity.ok(razaService.update(id, dto));
+        } catch (OperationException e) {
+            log.error("Error al actualizar Raza. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar Raza", e);
+            log.error("Error inesperado al actualizar Raza", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -68,8 +77,11 @@ public class RazaController {
         try {
             razaService.eliminar(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar Raza. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Raza", e);
+            log.error("Error inesperado al eliminar Raza", e);
             return ResponseEntity.internalServerError().build();
         }
     }

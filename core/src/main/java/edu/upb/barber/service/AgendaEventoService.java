@@ -10,6 +10,7 @@ import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.repository.entity.enums.RolEmpleadoEvento;
 import edu.upb.barber.repository.entity.enums.TipoEvento;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class AgendaEventoService {
     private final ComboServicioRepository comboServicioRepository;
     private final EmpleadoRepository empleadoRepository;
     private final EmpleadoSucursalRepository empleadoSucursalRepository;
+    private final LogService logService;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -41,18 +43,18 @@ public class AgendaEventoService {
         validarRequestBase(request);
 
         Sucursal sucursal = sucursalRepository.findById(request.getSucursalId())
-                .orElseThrow(() -> new Exception("Sucursal no encontrada con ID: " + request.getSucursalId()));
+                .orElseThrow(() -> new OperationException("Sucursal no encontrada con ID: " + request.getSucursalId()));
 
         Cliente cliente = null;
         if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
             cliente = clienteRepository.findById(request.getClienteId())
-                    .orElseThrow(() -> new Exception("Cliente no encontrado con ID: " + request.getClienteId()));
+                    .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
 
         Mascota mascota = null;
         if (request.getMascotaId() != null && !request.getMascotaId().isBlank()) {
             mascota = mascotaRepository.findById(request.getMascotaId())
-                    .orElseThrow(() -> new Exception("Mascota no encontrada con ID: " + request.getMascotaId()));
+                    .orElseThrow(() -> new OperationException("Mascota no encontrada con ID: " + request.getMascotaId()));
         }
 
         validarReglasPorTipo(request);
@@ -81,11 +83,11 @@ public class AgendaEventoService {
 
                 if (detalleDto.getServicioId() != null && !detalleDto.getServicioId().isBlank()) {
                     Servicio servicio = servicioRepository.findById(detalleDto.getServicioId())
-                            .orElseThrow(() -> new Exception("Servicio no encontrado con ID: " + detalleDto.getServicioId()));
+                            .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detalleDto.getServicioId()));
                     detalle.setServicio(servicio);
                 } else {
                     ComboServicio combo = comboServicioRepository.findById(detalleDto.getComboServicioId())
-                            .orElseThrow(() -> new Exception("Combo no encontrado con ID: " + detalleDto.getComboServicioId()));
+                            .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detalleDto.getComboServicioId()));
                     detalle.setComboServicio(combo);
                 }
                 agendaEventoDetalleRepository.save(detalle);
@@ -95,7 +97,7 @@ public class AgendaEventoService {
         if (request.getEmpleados() != null) {
             for (AgendaEventoEmpleadoCreateDto empleadoDto : request.getEmpleados()) {
                 Empleado empleado = empleadoRepository.findById(empleadoDto.getEmpleadoId())
-                        .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + empleadoDto.getEmpleadoId()));
+                        .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + empleadoDto.getEmpleadoId()));
 
                 AgendaEventoEmpleado agendaEventoEmpleado = new AgendaEventoEmpleado();
                 agendaEventoEmpleado.setAgendaEvento(agendaEvento);
@@ -107,6 +109,7 @@ public class AgendaEventoService {
             }
         }
 
+        logService.info("AgendaEvento creado exitosamente: " + agendaEvento.getId());
         AgendaEventoCreateResponseDto response = new AgendaEventoCreateResponseDto();
         response.setAgendaEventoId(agendaEvento.getId());
         response.setEstado(agendaEvento.getEstado());
@@ -115,32 +118,47 @@ public class AgendaEventoService {
 
     private void validarRequestBase(AgendaEventoCreateRequestDto request) throws Exception {
         if (request == null) {
-            throw new Exception("Request no puede ser null");
+            logService.error("Error en AgendaEvento. Request no puede ser null");
+            throw new OperationException("Request no puede ser null");
         }
         if (request.getSucursalId() == null || request.getSucursalId().isBlank()) {
-            throw new Exception("sucursal_id es requerido");
+            log.error("Error en AgendaEvento. sucursal_id es requerido");
+            logService.error("Error en AgendaEvento. sucursal_id es requerido");
+            throw new OperationException("sucursal_id es requerido");
         }
         if (request.getTipoEvento() == null) {
-            throw new Exception("tipo_evento es requerido");
+            log.error("Error en AgendaEvento. tipo_evento es requerido");
+            logService.error("Error en AgendaEvento. tipo_evento es requerido");
+            throw new OperationException("tipo_evento es requerido");
         }
         if (request.getInicio() == null || request.getFin() == null) {
-            throw new Exception("inicio y fin son requeridos");
+            log.error("Error en AgendaEvento. inicio y fin son requeridos");
+            logService.error("Error en AgendaEvento. inicio y fin son requeridos");
+            throw new OperationException("inicio y fin son requeridos");
         }
         if (!request.getInicio().isBefore(request.getFin())) {
-            throw new Exception("inicio debe ser menor que fin");
+            log.error("Error en AgendaEvento. inicio debe ser menor que fin");
+            logService.error("Error en AgendaEvento. inicio debe ser menor que fin");
+            throw new OperationException("inicio debe ser menor que fin");
         }
     }
 
     private void validarReglasPorTipo(AgendaEventoCreateRequestDto request) throws Exception {
         if (request.getTipoEvento() == TipoEvento.CITA) {
             if (request.getEmpleados() == null || request.getEmpleados().isEmpty()) {
-                throw new Exception("Para tipo CITA, empleados es requerido");
+                log.error("Error en AgendaEvento. Para tipo CITA, empleados es requerido");
+                logService.error("Error en AgendaEvento. Para tipo CITA, empleados es requerido");
+                throw new OperationException("Para tipo CITA, empleados es requerido");
             }
             if (request.getDetalles() == null || request.getDetalles().isEmpty()) {
-                throw new Exception("Para tipo CITA, detalles es requerido");
+                log.error("Error en AgendaEvento. Para tipo CITA, detalles es requerido");
+                logService.error("Error en AgendaEvento. Para tipo CITA, detalles es requerido");
+                throw new OperationException("Para tipo CITA, detalles es requerido");
             }
         } else if (request.getDetalles() != null && !request.getDetalles().isEmpty()) {
-            throw new Exception("detalles solo aplica para tipo CITA");
+            log.error("Error en AgendaEvento. detalles solo aplica para tipo CITA");
+            logService.error("Error en AgendaEvento. detalles solo aplica para tipo CITA");
+            throw new OperationException("detalles solo aplica para tipo CITA");
         }
     }
 
@@ -153,13 +171,19 @@ public class AgendaEventoService {
             boolean tieneCombo = detalle.getComboServicioId() != null && !detalle.getComboServicioId().isBlank();
 
             if (tieneServicio == tieneCombo) {
-                throw new Exception("Cada detalle debe tener servicio_id o combo_servicio_id, pero no ambos");
+                log.error("Error en detalle AgendaEvento. Debe tener servicio_id o combo_servicio_id, pero no ambos");
+                logService.error("Error en detalle AgendaEvento. Debe tener servicio_id o combo_servicio_id, pero no ambos");
+                throw new OperationException("Cada detalle debe tener servicio_id o combo_servicio_id, pero no ambos");
             }
             if (detalle.getDuracionEstimadaMinutos() == null || detalle.getDuracionEstimadaMinutos() <= 0) {
-                throw new Exception("duracion_estimada_minutos debe ser mayor que cero");
+                log.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
+                logService.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
+                throw new OperationException("duracion_estimada_minutos debe ser mayor que cero");
             }
             if (detalle.getPrecioAcordado() == null || detalle.getPrecioAcordado().compareTo(BigDecimal.ZERO) < 0) {
-                throw new Exception("precio_acordado debe ser mayor o igual a cero");
+                log.error("Error en detalle AgendaEvento. precio_acordado debe ser mayor o igual a cero");
+                logService.error("Error en detalle AgendaEvento. precio_acordado debe ser mayor o igual a cero");
+                throw new OperationException("precio_acordado debe ser mayor o igual a cero");
             }
         }
     }
@@ -176,22 +200,30 @@ public class AgendaEventoService {
         Set<String> ids = new HashSet<>();
         for (AgendaEventoEmpleadoCreateDto asignacion : empleados) {
             if (asignacion.getEmpleadoId() == null || asignacion.getEmpleadoId().isBlank()) {
-                throw new Exception("empleado_id es requerido en cada asignacion");
+                log.error("Error en asignacion AgendaEvento. empleado_id es requerido");
+                logService.error("Error en asignacion AgendaEvento. empleado_id es requerido en cada asignacion");
+                throw new OperationException("empleado_id es requerido en cada asignacion");
             }
             if (!ids.add(asignacion.getEmpleadoId())) {
-                throw new Exception("Empleado duplicado en asignaciones: " + asignacion.getEmpleadoId());
+                log.error("Error en asignacion AgendaEvento. Empleado duplicado: {}", asignacion.getEmpleadoId());
+                logService.error("Error en asignacion AgendaEvento. Empleado duplicado: " + asignacion.getEmpleadoId());
+                throw new OperationException("Empleado duplicado en asignaciones: " + asignacion.getEmpleadoId());
             }
 
             Empleado empleado = empleadoRepository.findById(asignacion.getEmpleadoId())
-                    .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + asignacion.getEmpleadoId()));
+                    .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + asignacion.getEmpleadoId()));
             if (!empleado.isActivo()) {
-                throw new Exception("Empleado inactivo: " + empleado.getId());
+                log.error("Error en asignacion AgendaEvento. Empleado inactivo: {}", empleado.getId());
+                logService.error("Error en asignacion AgendaEvento. Empleado inactivo: " + empleado.getId());
+                throw new OperationException("Empleado inactivo: " + empleado.getId());
             }
 
             boolean pertenece = empleadoSucursalRepository
                     .existsByEmpleadoIdAndSucursalIdAndActivoTrue(asignacion.getEmpleadoId(), sucursalId);
             if (!pertenece) {
-                throw new Exception("Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
+                log.error("Error en asignacion AgendaEvento. Empleado {} no pertenece a sucursal {}", asignacion.getEmpleadoId(), sucursalId);
+                logService.error("Error en asignacion AgendaEvento. Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
+                throw new OperationException("Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
             }
 
             boolean enConflicto = agendaEventoEmpleadoRepository.existsConflictoHorarioEmpleado(
@@ -201,10 +233,13 @@ public class AgendaEventoService {
                     Arrays.asList(EstadoEvento.CANCELADO, EstadoEvento.NO_SHOW)
             );
             if (enConflicto) {
-                throw new Exception("Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
+                log.error("Error en asignacion AgendaEvento. Conflicto de horario para empleado: {}", asignacion.getEmpleadoId());
+                logService.error("Error en asignacion AgendaEvento. Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
+                throw new OperationException("Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
             }
         }
     }
+
     @Transactional(readOnly = true)
     public List<AgendaEventoResponseDto> listar() {
         return agendaEventoRepository.findAll().stream()
@@ -265,30 +300,29 @@ public class AgendaEventoService {
     @Transactional
     public AgendaEventoCreateResponseDto update(String id, AgendaEventoCreateRequestDto request) throws Exception {
         AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
-                .orElseThrow(() -> new Exception("AgendaEvento no encontrado con ID: " + id));
+                .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + id));
 
         validarRequestBase(request);
 
         Sucursal sucursal = sucursalRepository.findById(request.getSucursalId())
-                .orElseThrow(() -> new Exception("Sucursal no encontrada con ID: " + request.getSucursalId()));
+                .orElseThrow(() -> new OperationException("Sucursal no encontrada con ID: " + request.getSucursalId()));
 
         Cliente cliente = null;
         if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
             cliente = clienteRepository.findById(request.getClienteId())
-                    .orElseThrow(() -> new Exception("Cliente no encontrado con ID: " + request.getClienteId()));
+                    .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
 
         Mascota mascota = null;
         if (request.getMascotaId() != null && !request.getMascotaId().isBlank()) {
             mascota = mascotaRepository.findById(request.getMascotaId())
-                    .orElseThrow(() -> new Exception("Mascota no encontrada con ID: " + request.getMascotaId()));
+                    .orElseThrow(() -> new OperationException("Mascota no encontrada con ID: " + request.getMascotaId()));
         }
 
         validarReglasPorTipo(request);
         validarAsignacionesParaUpdate(request.getEmpleados(), request.getSucursalId(), request, id);
         validarDetalles(request.getDetalles(), request.getTipoEvento());
 
-        // Limpiar detalles y asignaciones anteriores
         agendaEventoDetalleRepository.deleteByAgendaEventoId(id);
         agendaEventoEmpleadoRepository.deleteByAgendaEventoId(id);
 
@@ -312,11 +346,11 @@ public class AgendaEventoService {
 
                 if (detalleDto.getServicioId() != null && !detalleDto.getServicioId().isBlank()) {
                     Servicio servicio = servicioRepository.findById(detalleDto.getServicioId())
-                            .orElseThrow(() -> new Exception("Servicio no encontrado con ID: " + detalleDto.getServicioId()));
+                            .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detalleDto.getServicioId()));
                     detalle.setServicio(servicio);
                 } else {
                     ComboServicio combo = comboServicioRepository.findById(detalleDto.getComboServicioId())
-                            .orElseThrow(() -> new Exception("Combo no encontrado con ID: " + detalleDto.getComboServicioId()));
+                            .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detalleDto.getComboServicioId()));
                     detalle.setComboServicio(combo);
                 }
                 agendaEventoDetalleRepository.save(detalle);
@@ -326,7 +360,7 @@ public class AgendaEventoService {
         if (request.getEmpleados() != null) {
             for (AgendaEventoEmpleadoCreateDto empleadoDto : request.getEmpleados()) {
                 Empleado empleado = empleadoRepository.findById(empleadoDto.getEmpleadoId())
-                        .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + empleadoDto.getEmpleadoId()));
+                        .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + empleadoDto.getEmpleadoId()));
 
                 AgendaEventoEmpleado agendaEventoEmpleado = new AgendaEventoEmpleado();
                 agendaEventoEmpleado.setAgendaEvento(agendaEvento);
@@ -338,6 +372,7 @@ public class AgendaEventoService {
             }
         }
 
+        logService.info("AgendaEvento actualizado exitosamente: " + id);
         AgendaEventoCreateResponseDto response = new AgendaEventoCreateResponseDto();
         response.setAgendaEventoId(agendaEvento.getId());
         response.setEstado(agendaEvento.getEstado());
@@ -347,19 +382,21 @@ public class AgendaEventoService {
     @Transactional
     public void delete(String id) throws Exception {
         AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
-                .orElseThrow(() -> new Exception("AgendaEvento no encontrado con ID: " + id));
+                .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + id));
 
         agendaEventoDetalleRepository.deleteByAgendaEventoId(id);
         agendaEventoEmpleadoRepository.deleteByAgendaEventoId(id);
         agendaEventoRepository.delete(agendaEvento);
+        logService.info("AgendaEvento eliminado exitosamente: " + id);
     }
 
     @Transactional
     public AgendaEventoResponseDto actualizarEstado(String id, EstadoEvento nuevoEstado) throws Exception {
         AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
-                .orElseThrow(() -> new Exception("AgendaEvento no encontrado con ID: " + id));
+                .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + id));
         agendaEvento.setEstado(nuevoEstado);
         agendaEvento = agendaEventoRepository.save(agendaEvento);
+        logService.info("Estado de AgendaEvento actualizado a " + nuevoEstado + " para id: " + id);
         return new AgendaEventoResponseDto(agendaEvento);
     }
 
@@ -376,22 +413,30 @@ public class AgendaEventoService {
         Set<String> ids = new HashSet<>();
         for (AgendaEventoEmpleadoCreateDto asignacion : empleados) {
             if (asignacion.getEmpleadoId() == null || asignacion.getEmpleadoId().isBlank()) {
-                throw new Exception("empleado_id es requerido en cada asignacion");
+                log.error("Error en asignacion AgendaEvento. empleado_id es requerido");
+                logService.error("Error en asignacion AgendaEvento. empleado_id es requerido en cada asignacion");
+                throw new OperationException("empleado_id es requerido en cada asignacion");
             }
             if (!ids.add(asignacion.getEmpleadoId())) {
-                throw new Exception("Empleado duplicado en asignaciones: " + asignacion.getEmpleadoId());
+                log.error("Error en asignacion AgendaEvento. Empleado duplicado: {}", asignacion.getEmpleadoId());
+                logService.error("Error en asignacion AgendaEvento. Empleado duplicado: " + asignacion.getEmpleadoId());
+                throw new OperationException("Empleado duplicado en asignaciones: " + asignacion.getEmpleadoId());
             }
 
             Empleado empleado = empleadoRepository.findById(asignacion.getEmpleadoId())
-                    .orElseThrow(() -> new Exception("Empleado no encontrado con ID: " + asignacion.getEmpleadoId()));
+                    .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + asignacion.getEmpleadoId()));
             if (!empleado.isActivo()) {
-                throw new Exception("Empleado inactivo: " + empleado.getId());
+                log.error("Error en asignacion AgendaEvento. Empleado inactivo: {}", empleado.getId());
+                logService.error("Error en asignacion AgendaEvento. Empleado inactivo: " + empleado.getId());
+                throw new OperationException("Empleado inactivo: " + empleado.getId());
             }
 
             boolean pertenece = empleadoSucursalRepository
                     .existsByEmpleadoIdAndSucursalIdAndActivoTrue(asignacion.getEmpleadoId(), sucursalId);
             if (!pertenece) {
-                throw new Exception("Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
+                log.error("Error en asignacion AgendaEvento. Empleado {} no pertenece a sucursal {}", asignacion.getEmpleadoId(), sucursalId);
+                logService.error("Error en asignacion AgendaEvento. Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
+                throw new OperationException("Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
             }
 
             boolean enConflicto = agendaEventoEmpleadoRepository.existsConflictoHorarioEmpleadoExcludingEvent(
@@ -402,7 +447,9 @@ public class AgendaEventoService {
                     Arrays.asList(EstadoEvento.CANCELADO, EstadoEvento.NO_SHOW)
             );
             if (enConflicto) {
-                throw new Exception("Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
+                log.error("Error en asignacion AgendaEvento. Conflicto de horario para empleado: {}", asignacion.getEmpleadoId());
+                logService.error("Error en asignacion AgendaEvento. Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
+                throw new OperationException("Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
             }
         }
     }

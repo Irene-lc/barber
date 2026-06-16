@@ -3,10 +3,13 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.VentaRequestDto;
 import edu.upb.barber.repository.dto.response.VentaResponseDto;
 import edu.upb.barber.service.VentaService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -23,8 +26,11 @@ public class VentaController {
         try {
             VentaResponseDto ventaCreada = ventaService.crear(request);
             return ResponseEntity.ok(ventaCreada);
+        } catch (OperationException e) {
+            log.error("Error al crear Venta. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al crear Venta", e);
+            log.error("Error inesperado al crear Venta", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -55,8 +61,11 @@ public class VentaController {
     public ResponseEntity<VentaResponseDto> actualizar(@PathVariable String id, @RequestBody VentaRequestDto request) {
         try {
             return ResponseEntity.ok(ventaService.update(id, request));
+        } catch (OperationException e) {
+            log.error("Error al actualizar Venta. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar Venta", e);
+            log.error("Error inesperado al actualizar Venta", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -66,8 +75,11 @@ public class VentaController {
         try {
             ventaService.delete(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar Venta. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Venta", e);
+            log.error("Error inesperado al eliminar Venta", e);
             return ResponseEntity.internalServerError().build();
         }
     }

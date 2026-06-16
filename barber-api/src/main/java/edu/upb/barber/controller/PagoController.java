@@ -5,10 +5,13 @@ import edu.upb.barber.repository.dto.request.PagoRequestDto;
 import edu.upb.barber.repository.dto.response.GenerarPagoResponseDto;
 import edu.upb.barber.repository.dto.response.PagoResponseDto;
 import edu.upb.barber.service.PagoService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -25,8 +28,11 @@ public class PagoController {
         try {
             GenerarPagoResponseDto response = pagoService.generarCobroQR(request);
             return ResponseEntity.ok(response);
+        } catch (OperationException e) {
+            log.error("Error al generar cobro QR. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al generar cobro QR", e);
+            log.error("Error inesperado al generar cobro QR", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -35,8 +41,11 @@ public class PagoController {
     public ResponseEntity<PagoResponseDto> crear(@RequestBody PagoRequestDto request) {
         try {
             return ResponseEntity.ok(pagoService.crear(request));
+        } catch (OperationException e) {
+            log.error("Error al crear Pago. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al crear Pago", e);
+            log.error("Error inesperado al crear Pago", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -45,8 +54,11 @@ public class PagoController {
     public ResponseEntity<PagoResponseDto> actualizar(@PathVariable String id, @RequestBody PagoRequestDto request) {
         try {
             return ResponseEntity.ok(pagoService.update(id, request));
+        } catch (OperationException e) {
+            log.error("Error al actualizar Pago. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar Pago", e);
+            log.error("Error inesperado al actualizar Pago", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -56,8 +68,11 @@ public class PagoController {
         try {
             pagoService.delete(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar Pago. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Pago", e);
+            log.error("Error inesperado al eliminar Pago", e);
             return ResponseEntity.internalServerError().build();
         }
     }

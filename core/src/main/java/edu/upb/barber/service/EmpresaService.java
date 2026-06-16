@@ -5,6 +5,7 @@ import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.dto.request.EmpresaRequestDto;
 import edu.upb.barber.repository.dto.response.EmpresaResponseDto;
 import edu.upb.barber.repository.entity.Empresa;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -73,7 +74,7 @@ public class EmpresaService {
 
             log.error("Ya existe una empresa con ese nit");
 
-            throw new Exception(
+            throw new OperationException(
                     "Ya existe una empresa con ese nit");
         }
 

@@ -3,10 +3,13 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.EmpleadoRequestDto;
 import edu.upb.barber.repository.dto.response.EmpleadoResponseDto;
 import edu.upb.barber.service.EmpleadoService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,8 +47,11 @@ public class EmpleadoController {
     public ResponseEntity<EmpleadoResponseDto> guardar(@RequestBody EmpleadoRequestDto dto) {
         try {
             return ResponseEntity.ok(empleadoService.save(dto));
+        } catch (OperationException e) {
+            log.error("Error al guardar Empleado. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al guardar Empleado", e);
+            log.error("Error inesperado al guardar Empleado", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -57,8 +63,11 @@ public class EmpleadoController {
     ) {
         try {
             return ResponseEntity.ok(empleadoService.update(empleadoId, dto));
+        } catch (OperationException e) {
+            log.error("Error al actualizar Empleado. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar Empleado", e);
+            log.error("Error inesperado al actualizar Empleado", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -68,8 +77,11 @@ public class EmpleadoController {
         try {
             empleadoService.delete(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar Empleado. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Empleado", e);
+            log.error("Error inesperado al eliminar Empleado", e);
             return ResponseEntity.internalServerError().build();
         }
     }

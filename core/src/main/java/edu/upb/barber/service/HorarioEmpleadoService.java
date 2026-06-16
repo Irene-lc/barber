@@ -8,6 +8,7 @@ import edu.upb.barber.repository.dto.response.HorarioEmpleadoResponseDto;
 import edu.upb.barber.repository.entity.Empleado;
 import edu.upb.barber.repository.entity.HorarioEmpleado;
 import edu.upb.barber.repository.entity.Sucursal;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class HorarioEmpleadoService {
     private final HorarioEmpleadoRepository horarioEmpleadoRepository;
     private final EmpleadoRepository empleadoRepository;
     private final SucursalRepository sucursalRepository;
+    private final LogService logService;
 
     @Transactional(readOnly = true)
     public List<HorarioEmpleadoResponseDto> listar() {
@@ -44,10 +46,10 @@ public class HorarioEmpleadoService {
         validarDto(dto);
 
         Empleado empleado = empleadoRepository.findById(dto.getEmpleadoId())
-                .orElseThrow(() -> new Exception("Empleado no encontrado con id: " + dto.getEmpleadoId()));
+                .orElseThrow(() -> new OperationException("Empleado no encontrado con id: " + dto.getEmpleadoId()));
 
         Sucursal sucursal = sucursalRepository.findById(dto.getSucursalId())
-                .orElseThrow(() -> new Exception("Sucursal no encontrada con id: " + dto.getSucursalId()));
+                .orElseThrow(() -> new OperationException("Sucursal no encontrada con id: " + dto.getSucursalId()));
 
         HorarioEmpleado horario = new HorarioEmpleado();
         horario.setEmpleado(empleado);
@@ -60,13 +62,14 @@ public class HorarioEmpleadoService {
             horario.setActivo(dto.getActivo());
         }
 
+        logService.info("HorarioEmpleado guardado exitosamente para empleado: " + dto.getEmpleadoId());
         return new HorarioEmpleadoResponseDto(horarioEmpleadoRepository.save(horario));
     }
 
     @Transactional
     public HorarioEmpleadoResponseDto update(String horarioId, HorarioEmpleadoRequestDto dto) throws Exception {
         HorarioEmpleado horario = horarioEmpleadoRepository.findById(horarioId)
-                .orElseThrow(() -> new Exception("HorarioEmpleado no encontrado con id: " + horarioId));
+                .orElseThrow(() -> new OperationException("HorarioEmpleado no encontrado con id: " + horarioId));
 
         validarDto(dto);
 
@@ -80,36 +83,46 @@ public class HorarioEmpleadoService {
 
         if (dto.getEmpleadoId() != null && !dto.getEmpleadoId().isBlank()) {
             Empleado empleado = empleadoRepository.findById(dto.getEmpleadoId())
-                    .orElseThrow(() -> new Exception("Empleado no encontrado con id: " + dto.getEmpleadoId()));
+                    .orElseThrow(() -> new OperationException("Empleado no encontrado con id: " + dto.getEmpleadoId()));
             horario.setEmpleado(empleado);
         }
 
         if (dto.getSucursalId() != null && !dto.getSucursalId().isBlank()) {
             Sucursal sucursal = sucursalRepository.findById(dto.getSucursalId())
-                    .orElseThrow(() -> new Exception("Sucursal no encontrada con id: " + dto.getSucursalId()));
+                    .orElseThrow(() -> new OperationException("Sucursal no encontrada con id: " + dto.getSucursalId()));
             horario.setSucursal(sucursal);
         }
 
+        logService.info("HorarioEmpleado actualizado exitosamente: " + horarioId);
         return new HorarioEmpleadoResponseDto(horarioEmpleadoRepository.save(horario));
     }
 
     @Transactional
     public void delete(String id) throws Exception {
         if (!horarioEmpleadoRepository.existsById(id)) {
-            throw new Exception("HorarioEmpleado no encontrado con id: " + id);
+            log.error("Error al eliminar HorarioEmpleado. No encontrado con id: {}", id);
+            logService.error("Error al eliminar HorarioEmpleado. No encontrado con id: " + id);
+            throw new OperationException("HorarioEmpleado no encontrado con id: " + id);
         }
         horarioEmpleadoRepository.deleteById(id);
+        logService.info("HorarioEmpleado eliminado exitosamente: " + id);
     }
 
     private void validarDto(HorarioEmpleadoRequestDto dto) throws Exception {
         if (dto.getDiaSemana() == null) {
-            throw new Exception("El campo dia_semana es requerido");
+            log.error("Error en HorarioEmpleado. El campo dia_semana es requerido");
+            logService.error("Error en HorarioEmpleado. El campo dia_semana es requerido");
+            throw new OperationException("El campo dia_semana es requerido");
         }
         if (dto.getHoraInicio() == null || dto.getHoraFin() == null) {
-            throw new Exception("Los campos hora_inicio y hora_fin son requeridos");
+            log.error("Error en HorarioEmpleado. Los campos hora_inicio y hora_fin son requeridos");
+            logService.error("Error en HorarioEmpleado. Los campos hora_inicio y hora_fin son requeridos");
+            throw new OperationException("Los campos hora_inicio y hora_fin son requeridos");
         }
         if (!dto.getHoraInicio().isBefore(dto.getHoraFin())) {
-            throw new Exception("hora_inicio debe ser anterior a hora_fin");
+            log.error("Error en HorarioEmpleado. hora_inicio debe ser anterior a hora_fin");
+            logService.error("Error en HorarioEmpleado. hora_inicio debe ser anterior a hora_fin");
+            throw new OperationException("hora_inicio debe ser anterior a hora_fin");
         }
     }
 }

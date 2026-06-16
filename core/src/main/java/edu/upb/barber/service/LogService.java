@@ -35,14 +35,12 @@ public class LogService {
         );
     }
 
-
     @Async
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-
     public void error(String message) {
         repository.save(
                 Log.builder()
-                        .level(LogLevel.INFO)
+                        .level(LogLevel.ERROR)
                         .message(message)
                         .build()
         );
@@ -55,7 +53,7 @@ public class LogService {
     public void waring(String message) {
         repository.save(
                 Log.builder()
-                        .level(LogLevel.INFO)
+                        .level(LogLevel.WARN)
                         .message(message)
                         .build()
         );

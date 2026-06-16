@@ -8,6 +8,7 @@ import edu.upb.barber.repository.entity.Empresa;
 import edu.upb.barber.repository.entity.Servicio;
 import edu.upb.barber.repository.entity.enums.CategoriaServicio;
 import edu.upb.barber.repository.entity.enums.TipoDestinatarioServicio;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,21 +29,22 @@ public class ServicioService {
 
     private final ServicioRepository servicioRepository;
     private final EmpresaRepository empresaRepository;
+    private final LogService logService;
 
     @Transactional(readOnly = true)
     public List<ServicioResponseDto> listar() {
         Usuario currentUser = null;
-        if (SecurityContextHolder.getContext().getAuthentication() != null && 
+        if (SecurityContextHolder.getContext().getAuthentication() != null &&
             SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
             currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         }
 
-        String empresaId = (currentUser != null && currentUser.getEmpresa() != null) 
-                ? currentUser.getEmpresa().getId() 
+        String empresaId = (currentUser != null && currentUser.getEmpresa() != null)
+                ? currentUser.getEmpresa().getId()
                 : null;
 
-        List<Servicio> servicios = (empresaId != null) 
-                ? servicioRepository.findByEmpresaId(empresaId) 
+        List<Servicio> servicios = (empresaId != null)
+                ? servicioRepository.findByEmpresaId(empresaId)
                 : servicioRepository.findAll();
 
         return servicios.stream()
@@ -59,32 +61,42 @@ public class ServicioService {
     @Transactional
     public ServicioResponseDto save(ServicioRequestDto dto) throws Exception {
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
-            throw new Exception("El campo nombre es requerido");
+            log.error("Error al guardar servicio. El campo nombre es requerido");
+            logService.error("Error al guardar servicio. El campo nombre es requerido");
+            throw new OperationException("El campo nombre es requerido");
         }
         if (dto.getPrecio() == null || dto.getPrecio() < 0) {
-            throw new Exception("El precio debe ser mayor o igual a cero");
+            log.error("Error al guardar servicio. El precio debe ser mayor o igual a cero");
+            logService.error("Error al guardar servicio. El precio debe ser mayor o igual a cero");
+            throw new OperationException("El precio debe ser mayor o igual a cero");
         }
         if (dto.getDuracion() == null || dto.getDuracion() <= 0) {
-            throw new Exception("La duracion debe ser mayor a cero");
+            log.error("Error al guardar servicio. La duracion debe ser mayor a cero");
+            logService.error("Error al guardar servicio. La duracion debe ser mayor a cero");
+            throw new OperationException("La duracion debe ser mayor a cero");
         }
         if (dto.getEmpresaId() == null || dto.getEmpresaId().isBlank()) {
-            throw new Exception("El campo empresa_id es requerido");
+            log.error("Error al guardar servicio. El campo empresa_id es requerido");
+            logService.error("Error al guardar servicio. El campo empresa_id es requerido");
+            throw new OperationException("El campo empresa_id es requerido");
         }
 
         Usuario currentUser = null;
-        if (SecurityContextHolder.getContext().getAuthentication() != null && 
+        if (SecurityContextHolder.getContext().getAuthentication() != null &&
             SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
             currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         }
 
         if (currentUser != null && currentUser.getEmpresa() != null) {
             if (!currentUser.getEmpresa().getId().equals(dto.getEmpresaId())) {
-                throw new Exception("No tienes permiso para operar en la empresa especificada");
+                log.error("Error al guardar servicio. Sin permiso para operar en empresa: {}", dto.getEmpresaId());
+                logService.error("Error al guardar servicio. Sin permiso para operar en empresa: " + dto.getEmpresaId());
+                throw new OperationException("No tienes permiso para operar en la empresa especificada");
             }
         }
 
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
-                .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
+                .orElseThrow(() -> new OperationException("Empresa no encontrada con id: " + dto.getEmpresaId()));
 
         Servicio servicio = new Servicio();
         servicio.setNombre(dto.getNombre());
@@ -96,7 +108,7 @@ public class ServicioService {
         if (dto.getDestinatario() != null) {
             servicio.setDestinatario(TipoDestinatarioServicio.valueOf(dto.getDestinatario()));
         } else {
-            servicio.setDestinatario(TipoDestinatarioServicio.HUMANO); // default
+            servicio.setDestinatario(TipoDestinatarioServicio.HUMANO);
         }
 
         if (dto.getCategoria() != null) {
@@ -107,22 +119,29 @@ public class ServicioService {
             servicio.setActivo(dto.getActivo());
         }
 
+        logService.info("Servicio guardado exitosamente: " + dto.getNombre());
         return new ServicioResponseDto(servicioRepository.save(servicio));
     }
 
     @Transactional
     public ServicioResponseDto update(String servicioId, ServicioRequestDto dto) throws Exception {
         Servicio servicio = servicioRepository.findById(servicioId)
-                .orElseThrow(() -> new Exception("Servicio no encontrado con id: " + servicioId));
+                .orElseThrow(() -> new OperationException("Servicio no encontrado con id: " + servicioId));
 
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
-            throw new Exception("El campo nombre es requerido");
+            log.error("Error al actualizar servicio. El campo nombre es requerido");
+            logService.error("Error al actualizar servicio. El campo nombre es requerido");
+            throw new OperationException("El campo nombre es requerido");
         }
         if (dto.getPrecio() == null || dto.getPrecio() < 0) {
-            throw new Exception("El precio debe ser mayor o igual a cero");
+            log.error("Error al actualizar servicio. El precio debe ser mayor o igual a cero");
+            logService.error("Error al actualizar servicio. El precio debe ser mayor o igual a cero");
+            throw new OperationException("El precio debe ser mayor o igual a cero");
         }
         if (dto.getDuracion() == null || dto.getDuracion() <= 0) {
-            throw new Exception("La duracion debe ser mayor a cero");
+            log.error("Error al actualizar servicio. La duracion debe ser mayor a cero");
+            logService.error("Error al actualizar servicio. La duracion debe ser mayor a cero");
+            throw new OperationException("La duracion debe ser mayor a cero");
         }
 
         servicio.setNombre(dto.getNombre());
@@ -132,19 +151,21 @@ public class ServicioService {
 
         if (dto.getEmpresaId() != null && !dto.getEmpresaId().isBlank()) {
             Usuario currentUser = null;
-            if (SecurityContextHolder.getContext().getAuthentication() != null && 
+            if (SecurityContextHolder.getContext().getAuthentication() != null &&
                 SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
                 currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             }
 
             if (currentUser != null && currentUser.getEmpresa() != null) {
                 if (!currentUser.getEmpresa().getId().equals(dto.getEmpresaId())) {
-                    throw new Exception("No tienes permiso para operar en la empresa especificada");
+                    log.error("Error al actualizar servicio. Sin permiso para operar en empresa: {}", dto.getEmpresaId());
+                    logService.error("Error al actualizar servicio. Sin permiso para operar en empresa: " + dto.getEmpresaId());
+                    throw new OperationException("No tienes permiso para operar en la empresa especificada");
                 }
             }
 
             Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
-                    .orElseThrow(() -> new Exception("Empresa no encontrada con id: " + dto.getEmpresaId()));
+                    .orElseThrow(() -> new OperationException("Empresa no encontrada con id: " + dto.getEmpresaId()));
             servicio.setEmpresa(empresa);
         }
 
@@ -162,14 +183,18 @@ public class ServicioService {
             servicio.setActivo(dto.getActivo());
         }
 
+        logService.info("Servicio actualizado exitosamente: " + servicioId);
         return new ServicioResponseDto(servicioRepository.save(servicio));
     }
 
     @Transactional
     public void delete(String id) throws Exception {
         if (!servicioRepository.existsById(id)) {
-            throw new Exception("Servicio no encontrado con id: " + id);
+            log.error("Error al eliminar servicio. No encontrado con id: {}", id);
+            logService.error("Error al eliminar servicio. No encontrado con id: " + id);
+            throw new OperationException("Servicio no encontrado con id: " + id);
         }
         servicioRepository.deleteById(id);
+        logService.info("Servicio eliminado exitosamente: " + id);
     }
 }

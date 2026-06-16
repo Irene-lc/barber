@@ -3,17 +3,18 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.UsuarioRequestDto;
 import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
 import edu.upb.barber.service.UsuarioService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @AllArgsConstructor
-
 @RestController
 @Slf4j
 @RequestMapping("/api/v1/usuarios")
@@ -33,14 +34,15 @@ public class UsuarioController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN_EMPRESA')")
-    public ResponseEntity<Void> guardar(
-            @RequestBody UsuarioRequestDto usuario
-    ) {
+    public ResponseEntity<Void> guardar(@RequestBody UsuarioRequestDto usuario) {
         try {
             usuarioService.save(usuario);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al guardar usuario. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al guardar usuario", e);
+            log.error("Error inesperado al guardar usuario", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -51,19 +53,15 @@ public class UsuarioController {
         try {
             this.usuarioService.update(usuarioId, usuario);
             return ResponseEntity.ok().build();
-        }catch (Exception e) {
-            log.error("Error al actualizar usuario", e);
+        } catch (OperationException e) {
+            log.error("Error al actualizar usuario. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            log.error("Error inesperado al actualizar usuario", e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
-//    @PutMapping("/{id}")
-//    public ResponseEntity<Void> actualizar(@PathVariable("id") String usuarioId,
-//                                           @RequestBody UsuarioRequestDto usuario) {
-//            this.usuarioService.update(usuarioId, usuario);
-//            return ResponseEntity.ok().build();
-//
-//    }
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN_EMPRESA')")
     public ResponseEntity<UsuarioResponseDto> obtenerPorId(@PathVariable("id") String usuarioId) {
@@ -84,8 +82,11 @@ public class UsuarioController {
         try {
             usuarioService.delete(usuarioId);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar usuario. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar Usuario", e);
+            log.error("Error inesperado al eliminar usuario", e);
             return ResponseEntity.internalServerError().build();
         }
     }

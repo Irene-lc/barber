@@ -3,10 +3,13 @@ package edu.upb.barber.controller;
 import edu.upb.barber.repository.dto.request.ComboServicioRequestDto;
 import edu.upb.barber.repository.dto.response.ComboServicioResponseDto;
 import edu.upb.barber.service.ComboServicioService;
+import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,8 +47,11 @@ public class ComboServicioController {
     public ResponseEntity<ComboServicioResponseDto> crear(@RequestBody ComboServicioRequestDto dto) {
         try {
             return ResponseEntity.ok(comboServicioService.save(dto));
+        } catch (OperationException e) {
+            log.error("Error al crear ComboServicio. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al crear ComboServicio", e);
+            log.error("Error inesperado al crear ComboServicio", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -57,8 +63,11 @@ public class ComboServicioController {
     ) {
         try {
             return ResponseEntity.ok(comboServicioService.update(comboId, dto));
+        } catch (OperationException e) {
+            log.error("Error al actualizar ComboServicio. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al actualizar ComboServicio", e);
+            log.error("Error inesperado al actualizar ComboServicio", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -68,8 +77,11 @@ public class ComboServicioController {
         try {
             comboServicioService.delete(id);
             return ResponseEntity.ok().build();
+        } catch (OperationException e) {
+            log.error("Error al eliminar ComboServicio. Message: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            log.error("Error al eliminar ComboServicio", e);
+            log.error("Error inesperado al eliminar ComboServicio", e);
             return ResponseEntity.internalServerError().build();
         }
     }
