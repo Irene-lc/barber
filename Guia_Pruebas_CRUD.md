@@ -20,7 +20,7 @@ Esta guía contiene los endpoints y payloads (en formato JSON `snake_case`) orde
 ```json
 {
   "nombre": "root",
-  "password": "Abc123**"
+  password: password
 }
 ```
 * **Qué hacer:** Copia el valor del campo `token` de la respuesta y configúralo como Bearer Token en Postman.
@@ -68,7 +68,7 @@ Esta guía contiene los endpoints y payloads (en formato JSON `snake_case`) orde
     "nombre": "Carlos",
     "apellido": "Barbero",
     "email": "carlos.barbero@estilo.com",
-    "password": "Password123*",
+    password: "Password123*",
     "rol": "ROLE_EMPLEADO",
     "activo": true
   }
@@ -85,7 +85,7 @@ Esta guía contiene los endpoints y payloads (en formato JSON `snake_case`) orde
     "nombre": "Carlos Modificado",
     "apellido": "Barbero",
     "email": "carlos.barbero@estilo.com",
-    "password": "Password123*",
+    password: "Password123*",
     "rol": "ROLE_EMPLEADO",
     "activo": true
   }

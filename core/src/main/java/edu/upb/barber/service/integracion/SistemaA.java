@@ -38,7 +38,7 @@ public class SistemaA {
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("username", request.getNombre());
-        jsonObject.put("password", request.getPassword());
+        jsonObject.put("Abc123**", request.getPassword());
 
 //        ResponseEntity<Sistema1AuthResponse> response;
         ResponseEntity<String> response;
@@ -49,7 +49,7 @@ public class SistemaA {
                     .header("Accept", MediaType.APPLICATION_JSON_VALUE)
 //                    .body("{\n" +
 //                            " \"username\":\"root\",\n" +
-//                            "\"password\":\"Abc123**\"\n" +
+//                            "\"password\":\"password\"\n" +
 //                            "}")
                     .body(jsonObject.toString())
                     .retrieve()
