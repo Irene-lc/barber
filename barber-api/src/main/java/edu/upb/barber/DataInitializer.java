@@ -32,6 +32,7 @@ public class DataInitializer implements CommandLineRunner {
     private final AgendaEventoRepository   agendaEventoRepository;
     private final AgendaEventoDetalleRepository   agendaEventoDetalleRepository;
     private final AgendaEventoEmpleadoRepository  agendaEventoEmpleadoRepository;
+    private final EmpleadoSucursalRepository      empleadoSucursalRepository;
 
     @Override
     public void run(String... args) {
@@ -127,6 +128,12 @@ public class DataInitializer implements CommandLineRunner {
             eMiguel.setActivo(true);
             empleadoRepository.save(eMiguel);
 
+            EmpleadoSucursal esMiguel = new EmpleadoSucursal();
+            esMiguel.setEmpleado(eMiguel);
+            esMiguel.setSucursal(sucBarber);
+            esMiguel.setActivo(true);
+            empleadoSucursalRepository.save(esMiguel);
+
             Usuario uCarlos = Usuario.builder()
                     .nombre("carlos")
                     .apellido("Mendoza")
@@ -148,6 +155,12 @@ public class DataInitializer implements CommandLineRunner {
             eCarlos.setDisponible(true);
             eCarlos.setActivo(true);
             empleadoRepository.save(eCarlos);
+
+            EmpleadoSucursal esCarlos = new EmpleadoSucursal();
+            esCarlos.setEmpleado(eCarlos);
+            esCarlos.setSucursal(sucBarber);
+            esCarlos.setActivo(true);
+            empleadoSucursalRepository.save(esCarlos);
 
             // Clientes de barbería
             Cliente c1 = new Cliente();
@@ -241,6 +254,12 @@ public class DataInitializer implements CommandLineRunner {
             eLaura.setActivo(true);
             empleadoRepository.save(eLaura);
 
+            EmpleadoSucursal esLaura = new EmpleadoSucursal();
+            esLaura.setEmpleado(eLaura);
+            esLaura.setSucursal(sucSalon);
+            esLaura.setActivo(true);
+            empleadoSucursalRepository.save(esLaura);
+
             Usuario uSofia = Usuario.builder()
                     .nombre("sofia")
                     .apellido("Rojas")
@@ -262,6 +281,12 @@ public class DataInitializer implements CommandLineRunner {
             eSofia.setDisponible(true);
             eSofia.setActivo(true);
             empleadoRepository.save(eSofia);
+
+            EmpleadoSucursal esSofia = new EmpleadoSucursal();
+            esSofia.setEmpleado(eSofia);
+            esSofia.setSucursal(sucSalon);
+            esSofia.setActivo(true);
+            empleadoSucursalRepository.save(esSofia);
 
             // Clientas de salón
             Cliente cs1 = new Cliente();
@@ -354,6 +379,12 @@ public class DataInitializer implements CommandLineRunner {
             eDra.setDisponible(true);
             eDra.setActivo(true);
             empleadoRepository.save(eDra);
+
+            EmpleadoSucursal esDra = new EmpleadoSucursal();
+            esDra.setEmpleado(eDra);
+            esDra.setSucursal(sucVet);
+            esDra.setActivo(true);
+            empleadoSucursalRepository.save(esDra);
 
             // Especies y razas para veterinaria
             Especie canino = new Especie();

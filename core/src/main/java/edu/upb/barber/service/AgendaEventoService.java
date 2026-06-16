@@ -10,7 +10,12 @@ import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.repository.entity.enums.RolEmpleadoEvento;
 import edu.upb.barber.repository.entity.enums.TipoEvento;
+import edu.upb.barber.repository.dto.request.WalkInRequestDto;
+import edu.upb.barber.repository.dto.request.VentaRequestDto;
+import edu.upb.barber.repository.dto.request.VentaDetalleRequestDto;
+import edu.upb.barber.repository.entity.enums.TipoItemVenta;
 import edu.upb.barber.service.exception.OperationException;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +41,8 @@ public class AgendaEventoService {
     private final EmpleadoRepository empleadoRepository;
     private final EmpleadoSucursalRepository empleadoSucursalRepository;
     private final LogService logService;
+    private final VentaService ventaService;
+    private final ProductoRepository productoRepository;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -452,6 +459,134 @@ public class AgendaEventoService {
                 throw new OperationException("Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
             }
         }
+    }
+
+    @Transactional
+    public void registrarWalkIn(WalkInRequestDto request) throws Exception {
+        if (request.empleadoId() == null || request.empleadoId().isBlank()) {
+            throw new OperationException("El campo empleado_id es requerido");
+        }
+        if (request.clienteId() == null || request.clienteId().isBlank()) {
+            throw new OperationException("El campo cliente_id es requerido");
+        }
+        if (request.servicioIds() == null || request.servicioIds().isEmpty()) {
+            throw new OperationException("Debe seleccionar al menos un servicio para el walk-in");
+        }
+
+        // 1. Buscar Empleado
+        Empleado empleado = empleadoRepository.findById(request.empleadoId())
+                .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + request.empleadoId()));
+
+        if (!empleado.isActivo()) {
+            throw new OperationException("El empleado seleccionado no está activo");
+        }
+
+        // 2. Determinar Sucursal activa del empleado
+        List<EmpleadoSucursal> asignaciones = empleadoSucursalRepository.findByEmpleadoIdAndActivoTrue(empleado.getId());
+        if (asignaciones.isEmpty()) {
+            throw new OperationException("El empleado no tiene asignada ninguna sucursal activa");
+        }
+        Sucursal sucursal = asignaciones.get(0).getSucursal();
+
+        // 3. Buscar Cliente
+        Cliente cliente = clienteRepository.findById(request.clienteId())
+                .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.clienteId()));
+
+        // 4. Calcular duración y preparar servicios
+        int duracionTotal = 0;
+        List<Servicio> servicios = new ArrayList<>();
+        for (String servicioId : request.servicioIds()) {
+            Servicio servicio = servicioRepository.findById(servicioId)
+                    .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + servicioId));
+            servicios.add(servicio);
+            duracionTotal += servicio.getDuracionMinutos();
+        }
+
+        OffsetDateTime inicio = OffsetDateTime.now();
+        OffsetDateTime fin = inicio.plusMinutes(duracionTotal);
+
+        // 5. Crear e insertar el AgendaEvento
+        AgendaEvento agendaEvento = new AgendaEvento();
+        agendaEvento.setSucursal(sucursal);
+        agendaEvento.setCliente(cliente);
+        agendaEvento.setTipoEvento(TipoEvento.CITA);
+        agendaEvento.setEstado(EstadoEvento.FINALIZADO); // Walk-in es atención al instante y finalizada
+        agendaEvento.setInicio(inicio);
+        agendaEvento.setFin(fin);
+        agendaEvento.setNotas("Atención rápida (Walk-in)");
+        
+        agendaEvento = agendaEventoRepository.save(agendaEvento);
+
+        // 6. Crear los detalles de los servicios en la cita
+        for (Servicio servicio : servicios) {
+            AgendaEventoDetalle detalle = new AgendaEventoDetalle();
+            detalle.setAgendaEvento(agendaEvento);
+            detalle.setServicio(servicio);
+            detalle.setDuracionEstimadaMinutos(servicio.getDuracionMinutos());
+            detalle.setPrecioAcordado(servicio.getPrecioBase());
+            detalle.setNotas("Servicio Walk-in");
+            agendaEventoDetalleRepository.save(detalle);
+        }
+
+        // 7. Asignar el empleado responsable de la cita
+        AgendaEventoEmpleado asignacionEmpleado = new AgendaEventoEmpleado();
+        asignacionEmpleado.setAgendaEvento(agendaEvento);
+        asignacionEmpleado.setEmpleado(empleado);
+        asignacionEmpleado.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
+        agendaEventoEmpleadoRepository.save(asignacionEmpleado);
+
+        // 8. Crear la boleta de venta (Venta)
+        List<VentaDetalleRequestDto> detallesVenta = new ArrayList<>();
+        BigDecimal totalVenta = BigDecimal.ZERO;
+
+        // Agregar detalles de los servicios prestados a la venta
+        for (Servicio servicio : servicios) {
+            VentaDetalleRequestDto detDto = new VentaDetalleRequestDto();
+            detDto.setTipoItem(TipoItemVenta.SERVICIO);
+            detDto.setServicioId(servicio.getId());
+            detDto.setEmpleadoId(empleado.getId());
+            detDto.setCantidad(1);
+            detDto.setPrecioUnitario(servicio.getPrecioBase() != null ? servicio.getPrecioBase() : BigDecimal.ZERO);
+            detDto.setDescuento(BigDecimal.ZERO);
+            detDto.setNotas("Servicio Walk-in");
+            detallesVenta.add(detDto);
+            totalVenta = totalVenta.add(detDto.getPrecioUnitario());
+        }
+
+        // Agregar detalles de los productos vendidos (si los hay)
+        if (request.productoIds() != null) {
+            for (String productoId : request.productoIds()) {
+                if (productoId == null || productoId.isBlank()) continue;
+                Producto producto = productoRepository.findById(productoId)
+                        .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + productoId));
+
+                VentaDetalleRequestDto detDto = new VentaDetalleRequestDto();
+                detDto.setTipoItem(TipoItemVenta.PRODUCTO);
+                detDto.setProductoId(producto.getId());
+                detDto.setEmpleadoId(empleado.getId());
+                detDto.setCantidad(1);
+                detDto.setPrecioUnitario(producto.getPrecioVenta() != null ? producto.getPrecioVenta() : BigDecimal.ZERO);
+                detDto.setDescuento(BigDecimal.ZERO);
+                detDto.setNotas("Producto vendido en Walk-in");
+                detallesVenta.add(detDto);
+                totalVenta = totalVenta.add(detDto.getPrecioUnitario());
+            }
+        }
+
+        // Construir la petición de venta
+        VentaRequestDto ventaRequest = new VentaRequestDto();
+        ventaRequest.setSucursalId(sucursal.getId());
+        ventaRequest.setClienteId(cliente.getId());
+        ventaRequest.setSubtotal(totalVenta);
+        ventaRequest.setDescuento(BigDecimal.ZERO);
+        ventaRequest.setTotal(totalVenta);
+        ventaRequest.setNotas("Venta automática generada por Walk-in");
+        ventaRequest.setDetalles(detallesVenta);
+
+        // Crear venta (esto gestiona internamente la reducción de stock)
+        ventaService.crear(ventaRequest);
+
+        logService.info("Walk-in registrado con éxito. Cita ID: " + agendaEvento.getId());
     }
 
 }

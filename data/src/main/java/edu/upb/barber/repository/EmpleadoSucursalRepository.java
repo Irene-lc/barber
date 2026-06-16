@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface EmpleadoSucursalRepository extends JpaRepository<EmpleadoSucursal, String> {
 
     boolean existsByEmpleadoIdAndSucursalIdAndActivoTrue(String empleadoId, String sucursalId);
+
+    java.util.List<EmpleadoSucursal> findByEmpleadoIdAndActivoTrue(String empleadoId);
 }
