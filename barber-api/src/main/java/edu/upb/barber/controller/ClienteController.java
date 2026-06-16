@@ -2,6 +2,8 @@ package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.ClienteRequestDto;
 import edu.upb.barber.repository.dto.response.ClienteResponseDto;
+import edu.upb.barber.repository.entity.Usuario;
+import edu.upb.barber.repository.entity.enums.RolUsuario;
 import edu.upb.barber.service.ClienteService;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
@@ -14,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.ZoneId;
 import java.util.Date;
@@ -30,6 +34,13 @@ public class ClienteController {
     @GetMapping
     public ResponseEntity<List<ClienteResponseDto>> listar() {
         try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof Usuario) {
+                Usuario principal = (Usuario) authentication.getPrincipal();
+                if (principal.getRol() == RolUsuario.ROLE_CLIENTE) {
+                    return ResponseEntity.ok(clienteService.listarPorUsuario(principal.getId()));
+                }
+            }
             return ResponseEntity.ok(clienteService.listar());
         } catch (Exception e) {
             log.error("Error al listar clientes", e);

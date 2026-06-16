@@ -36,6 +36,13 @@ public class ClienteService {
     }
 
     @Transactional(readOnly = true)
+    public List<ClienteResponseDto> listarPorUsuario(String usuarioId) {
+        return clienteRepository.findByUsuarioId(usuarioId).stream()
+                .map(ClienteResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public Optional<ClienteResponseDto> findById(String id) {
         return clienteRepository.findById(id)
                 .map(ClienteResponseDto::new);

@@ -26,4 +26,6 @@ public interface ClienteRepository extends JpaRepository<Cliente, String> {
 
     Optional<Cliente> findByEmailAndEmpresa(String email, Empresa empresa);
 
+    Optional<Cliente> findByUsuarioId(String usuarioId);
+
 }
