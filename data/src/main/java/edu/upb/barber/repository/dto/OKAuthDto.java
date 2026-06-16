@@ -35,4 +35,10 @@ public class OKAuthDto implements Serializable {
 
     @JsonProperty("empresa_id")
     private String empresaId;
+
+    // Datos personales del usuario para el frontend
+    private String nombre;
+    private String apellido;
+    private String telefono;
+    private String email;
 }

@@ -81,6 +81,9 @@ public class JwtTokenProvider implements Serializable {
                 .rol(user.getRol().name())
                 .tipoEmpresa(tipoEmpresa)
                 .empresaId(empresaId)
+                .nombre(user.getNombre())
+                .apellido(user.getApellido() != null ? user.getApellido() : "")
+                .email(user.getEmail())
                 .build();
     }
 
