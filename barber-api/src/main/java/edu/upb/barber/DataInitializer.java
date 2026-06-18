@@ -3,6 +3,7 @@ package edu.upb.barber;
 import edu.upb.barber.repository.*;
 import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.*;
+import edu.upb.barber.service.EmailService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -34,9 +35,12 @@ public class DataInitializer implements CommandLineRunner {
     private final AgendaEventoEmpleadoRepository  agendaEventoEmpleadoRepository;
     private final EmpleadoSucursalRepository      empleadoSucursalRepository;
 
+    private final EmailService emailService;
+
     @Override
     public void run(String... args) {
         init();
+        emailService.sendPassword("rllayus@gmail.com", "Klipp");
     }
 
     @Transactional
