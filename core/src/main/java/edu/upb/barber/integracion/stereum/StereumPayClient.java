@@ -1,6 +1,5 @@
-package edu.upb.barber.service.integracion.stereum;
+package edu.upb.barber.integracion.stereum;
 
-import edu.upb.barber.service.exception.NotDataFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;

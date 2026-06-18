@@ -1,4 +1,4 @@
-package edu.upb.barber.service.integracion.stereum;
+package edu.upb.barber.integracion.stereum;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

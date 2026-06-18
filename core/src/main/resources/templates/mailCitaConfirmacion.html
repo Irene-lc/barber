@@ -1,0 +1,280 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta name="viewport" content="width=device-width"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>KLIPP — Cita Confirmada</title>
+    <style>
+        img { border: none; -ms-interpolation-mode: bicubic; max-width: 100%; }
+        body {
+            background-color: #121317;
+            font-family: Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+        table { border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; }
+        table td { font-family: Arial, sans-serif; font-size: 14px; vertical-align: top; }
+
+        .body { background-color: #121317; width: 100%; }
+        .container { display: block; margin: 0 auto !important; max-width: 580px; padding: 10px; width: 580px; }
+        .content { box-sizing: border-box; display: block; margin: 0 auto; max-width: 580px; padding: 10px; }
+
+        .main {
+            background: #1a1b1f;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 12px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header-bar {
+            background: linear-gradient(135deg, #ffd700 0%, #ffe45c 100%);
+            padding: 28px 32px 24px;
+            text-align: center;
+        }
+        .brand-name {
+            font-size: 28px;
+            font-weight: 900;
+            color: #121317;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin: 0;
+            display: block;
+        }
+        .brand-tagline {
+            font-size: 11px;
+            font-weight: 600;
+            color: #121317;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .confirm-badge {
+            background: rgba(51, 209, 122, 0.12);
+            border: 1px solid rgba(51, 209, 122, 0.3);
+            border-radius: 20px;
+            display: inline-block;
+            padding: 5px 14px;
+            margin-bottom: 16px;
+        }
+        .confirm-badge span {
+            color: #33d17a;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .wrapper { box-sizing: border-box; padding: 32px 36px; }
+
+        h2 {
+            color: #f5f2e8;
+            font-size: 21px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+        }
+        .greeting-sub {
+            color: #c7c3b6;
+            font-size: 14px;
+            margin: 0 0 28px 0;
+        }
+
+        .info-card {
+            background: #202127;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        .info-card-header {
+            background: rgba(255, 215, 0, 0.08);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+            padding: 10px 18px;
+        }
+        .info-card-header span {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #ffd700;
+        }
+        .info-card-body { padding: 16px 18px; }
+
+        .info-row { margin-bottom: 12px; }
+        .info-row:last-child { margin-bottom: 0; }
+        .info-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #858174;
+            margin: 0 0 2px 0;
+        }
+        .info-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f5f2e8;
+            margin: 0;
+        }
+
+        .services-list { margin: 0; padding: 0; list-style: none; }
+        .services-list li {
+            color: #c7c3b6;
+            font-size: 13px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .services-list li:last-child { border-bottom: none; }
+        .services-list li::before {
+            content: '✦ ';
+            color: #ffd700;
+            font-size: 10px;
+        }
+
+        .note-box {
+            background: rgba(255, 215, 0, 0.06);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-top: 20px;
+        }
+        .note-box p { color: #c7c3b6; font-size: 13px; margin: 0; }
+        .note-box p strong { color: #ffd700; }
+
+        .divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 28px 0; }
+
+        p { color: #c7c3b6; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; }
+        p strong { color: #f5f2e8; }
+
+        .footer { padding: 0 36px 28px; text-align: center; }
+        .footer-links { font-size: 12px; color: #858174; margin-bottom: 12px; }
+        .footer-links a { color: #858174; text-decoration: none; margin: 0 6px; }
+        .footer-copy { font-size: 11px; color: #858174; }
+
+        .preheader { color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0; }
+
+        @media only screen and (max-width: 620px) {
+            .container { padding: 0 !important; width: 100% !important; }
+            .wrapper { padding: 24px 20px !important; }
+            .footer { padding: 0 20px 24px !important; }
+        }
+    </style>
+</head>
+<body>
+<span class="preheader">Tu cita en KLIPP está confirmada — te esperamos.</span>
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" class="body">
+    <tr>
+        <td>&nbsp;</td>
+        <td class="container">
+            <div class="content">
+                <table role="presentation" class="main">
+
+                    <!-- HEADER -->
+                    <tr>
+                        <td class="header-bar">
+                            <span class="brand-name">KLIPP</span>
+                            <span class="brand-tagline">Gestión Inteligente</span>
+                        </td>
+                    </tr>
+
+                    <!-- CUERPO -->
+                    <tr>
+                        <td class="wrapper">
+
+                            <div style="text-align:center; margin-bottom:20px;">
+                                <div class="confirm-badge"><span>✓ Cita Confirmada</span></div>
+                            </div>
+
+                            <h2>¡Hola, <span th:text="${clienteNombre}">Cliente</span>!</h2>
+                            <p class="greeting-sub">Tu cita ha sido reservada exitosamente. Aquí están los detalles:</p>
+
+                            <!-- FECHA Y HORA -->
+                            <div class="info-card">
+                                <div class="info-card-header"><span>📅 Fecha &amp; Hora</span></div>
+                                <div class="info-card-body">
+                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                        <tr>
+                                            <td width="50%">
+                                                <div class="info-row">
+                                                    <p class="info-label">Fecha</p>
+                                                    <p class="info-value" th:text="${fecha}">Lunes, 17 de Junio 2026</p>
+                                                </div>
+                                            </td>
+                                            <td width="50%">
+                                                <div class="info-row">
+                                                    <p class="info-label">Hora</p>
+                                                    <p class="info-value" th:text="${hora}">10:00 AM</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- SERVICIOS -->
+                            <div class="info-card">
+                                <div class="info-card-header"><span>✂ Servicios</span></div>
+                                <div class="info-card-body">
+                                    <ul class="services-list">
+                                        <li th:each="servicio : ${servicios}" th:text="${servicio}">Corte de cabello</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- PROFESIONAL Y SUCURSAL -->
+                            <div class="info-card">
+                                <div class="info-card-header"><span>👤 Profesional &amp; Sucursal</span></div>
+                                <div class="info-card-body">
+                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                        <tr>
+                                            <td width="50%">
+                                                <div class="info-row">
+                                                    <p class="info-label">Profesional</p>
+                                                    <p class="info-value" th:text="${empleadoNombre}">Barbero</p>
+                                                </div>
+                                            </td>
+                                            <td width="50%">
+                                                <div class="info-row">
+                                                    <p class="info-label">Sucursal</p>
+                                                    <p class="info-value" th:text="${sucursalNombre}">Sucursal Centro</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="note-box">
+                                <p><strong>Recordatorio:</strong> Si necesitas cancelar o reprogramar tu cita, contáctanos con al menos 2 horas de anticipación. ¡Te esperamos!</p>
+                            </div>
+
+                            <hr class="divider"/>
+                            <p style="font-size:13px; text-align:center;">¿Tienes dudas? Escríbenos por <strong>WhatsApp</strong> o visita nuestra plataforma.</p>
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td class="footer">
+                            <p class="footer-links">
+                                <a href="https://www.upb.edu">Acerca de</a> &middot;
+                                <a href="https://api.whatsapp.com/send?phone=59163608144">Soporte</a>
+                            </p>
+                            <p class="footer-copy">© KLIPP · Universidad Privada Boliviana · Santa Cruz de la Sierra, Bolivia.</p>
+                        </td>
+                    </tr>
+
+                </table>
+            </div>
+        </td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+</body>
+</html>

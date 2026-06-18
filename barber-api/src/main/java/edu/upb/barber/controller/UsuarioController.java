@@ -2,6 +2,7 @@ package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.UsuarioRequestDto;
 import edu.upb.barber.repository.dto.response.UsuarioResponseDto;
+import edu.upb.barber.service.EmailService;
 import edu.upb.barber.service.UsuarioService;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final EmailService emailService;
 
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDto>> usuarios() {
@@ -36,7 +38,12 @@ public class UsuarioController {
     @PreAuthorize("hasAnyRole('ADMIN_EMPRESA')")
     public ResponseEntity<Void> guardar(@RequestBody UsuarioRequestDto usuario) {
         try {
+            String rawPassword = usuario.getPassword();
             usuarioService.save(usuario);
+            if (usuario.getEmail() != null && rawPassword != null) {
+                String nombre = usuario.getNombre() != null ? usuario.getNombre() : usuario.getEmail();
+                emailService.sendPassword(usuario.getEmail(), nombre, rawPassword);
+            }
             return ResponseEntity.ok().build();
         } catch (OperationException e) {
             log.error("Error al guardar usuario. Message: {}", e.getMessage());

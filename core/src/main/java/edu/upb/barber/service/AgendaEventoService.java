@@ -2,6 +2,9 @@ package edu.upb.barber.service;
 
 import edu.upb.barber.repository.*;
 import edu.upb.barber.repository.dto.request.AgendaEventoCreateRequestDto;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import edu.upb.barber.repository.dto.request.AgendaEventoDetalleCreateDto;
 import edu.upb.barber.repository.dto.request.AgendaEventoEmpleadoCreateDto;
 import edu.upb.barber.repository.dto.response.AgendaEventoCreateResponseDto;
@@ -43,6 +46,7 @@ public class AgendaEventoService {
     private final LogService logService;
     private final VentaService ventaService;
     private final ProductoRepository productoRepository;
+    private final EmailService emailService;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -117,6 +121,40 @@ public class AgendaEventoService {
         }
 
         logService.info("AgendaEvento creado exitosamente: " + agendaEvento.getId());
+
+        // Enviar confirmación al cliente si tiene email
+        if (cliente != null && cliente.getEmail() != null && !cliente.getEmail().isBlank()
+                && agendaEvento.getTipoEvento() == TipoEvento.CITA) {
+            try {
+                DateTimeFormatter fechaFmt = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM yyyy", new Locale("es", "ES"));
+                DateTimeFormatter horaFmt = DateTimeFormatter.ofPattern("HH:mm");
+                String fecha = agendaEvento.getInicio().atZoneSameInstant(ZoneId.of("America/La_Paz")).format(fechaFmt);
+                String hora = agendaEvento.getInicio().atZoneSameInstant(ZoneId.of("America/La_Paz")).format(horaFmt);
+
+                List<String> nombresServicios = agendaEventoDetalleRepository.findByAgendaEventoId(agendaEvento.getId())
+                        .stream()
+                        .map(d -> d.getServicio() != null ? d.getServicio().getNombre() : (d.getComboServicio() != null ? d.getComboServicio().getNombre() : "Servicio"))
+                        .toList();
+
+                String empleadoNombre = agendaEventoEmpleadoRepository.findByAgendaEventoId(agendaEvento.getId())
+                        .stream().findFirst()
+                        .map(e -> e.getEmpleado().getNombre())
+                        .orElse("Tu estilista");
+
+                emailService.sendCitaConfirmacion(
+                        cliente.getEmail(),
+                        cliente.getNombre(),
+                        fecha,
+                        hora,
+                        nombresServicios,
+                        empleadoNombre,
+                        sucursal.getNombre()
+                );
+            } catch (Exception ex) {
+                logService.error("No se pudo enviar email de confirmación de cita: " + ex.getMessage());
+            }
+        }
+
         AgendaEventoCreateResponseDto response = new AgendaEventoCreateResponseDto();
         response.setAgendaEventoId(agendaEvento.getId());
         response.setEstado(agendaEvento.getEstado());
