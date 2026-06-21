@@ -10,8 +10,10 @@ import edu.upb.barber.repository.entity.Usuario;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final EmpresaRepository empresaRepository;
     private final LogService logService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public void save(UsuarioRequestDto usuarioRequestDto) throws Exception {
@@ -70,7 +73,7 @@ public class UsuarioService {
         usuario.setApellido(usuarioRequestDto.getApellido());
         usuario.setEmail(usuarioRequestDto.getEmail());
 
-        usuario.setPasswordHash(usuarioRequestDto.getPassword());
+        usuario.setPasswordHash(passwordEncoder.encode(usuarioRequestDto.getPassword()));
 
         usuario.setRol(usuarioRequestDto.getRol());
 
@@ -106,6 +109,7 @@ public class UsuarioService {
     }
 
     @Async
+    @CacheEvict(value = "usuario", allEntries = true)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void update(String usuarioId, UsuarioRequestDto usuarioRequestDto) throws Exception {
 
@@ -127,12 +131,6 @@ public class UsuarioService {
             throw new OperationException("El formato del correo electrónico es inválido");
         }
 
-        if (StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
-            log.error("Error al actualizar usuario. El campo password es null");
-            logService.error("Error al actualizar usuario. El campo password es null");
-            throw new OperationException("El campo password es null");
-        }
-
         Optional<Usuario> optionalUsuario = this.usuarioRepository.findById(usuarioId);
         if (optionalUsuario.isEmpty()) {
             logService.error("Error al actualizar usuario. No existe el usuario con id: " + usuarioId);
@@ -143,7 +141,9 @@ public class UsuarioService {
 
         usuario.setNombre(usuarioRequestDto.getNombre());
         usuario.setApellido(usuarioRequestDto.getApellido());
-        usuario.setPasswordHash(usuarioRequestDto.getPassword());
+        if (!StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
+            usuario.setPasswordHash(passwordEncoder.encode(usuarioRequestDto.getPassword()));
+        }
         usuario.setEmail(usuarioRequestDto.getEmail());
         usuario.setRol(usuarioRequestDto.getRol());
         if (usuarioRequestDto.getActivo() != null) {
@@ -156,10 +156,7 @@ public class UsuarioService {
             usuario.setEmpresa(empresa);
         }
 
-        Usuario user = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new OperationException("Usuario no encontrado: " + usuarioId));
-
-        usuarioRepository.save(user);
+        usuarioRepository.save(usuario);
         logService.info("Usuario actualizado exitosamente: " + usuarioId);
     }
 

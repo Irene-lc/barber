@@ -1,4 +1,4 @@
-package edu.upb.barber.service.integracion;
+package edu.upb.barber.integracion;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;

@@ -1,6 +1,6 @@
 package edu.upb.barber.service;
 
-import edu.upb.barber.service.emailConfig.MailContentBuilder;
+import edu.upb.barber.emailConfig.MailContentBuilder;
 import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,5 +49,17 @@ public class EmailService {
         };
         javaMailSender.send(messagePreparator);
         log.info("Email enviado a: " + to);
+    }
+    @Async("taskLog")
+    public void sendResetPassword(String to, String nombre, String resetLink) {
+        MimeMessagePreparator messagePreparator = mimeMessage -> {
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+            messageHelper.setTo(to);
+            messageHelper.setFrom(new InternetAddress(mailFrom));
+            messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
+            messageHelper.setSubject("KLIPP — Restablece tu contraseña");
+            messageHelper.setText(mailContentBuilder.sendResetPassword(nombre, resetLink), true);
+        };
+        javaMailSender.send(messagePreparator);
     }
 }

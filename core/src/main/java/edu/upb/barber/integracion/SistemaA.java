@@ -1,4 +1,4 @@
-package edu.upb.barber.service.integracion;
+package edu.upb.barber.integracion;
 
 import edu.upb.barber.repository.dto.request.ClienteRequestDto;
 import edu.upb.barber.repository.dto.request.EmpresaRequestDto;

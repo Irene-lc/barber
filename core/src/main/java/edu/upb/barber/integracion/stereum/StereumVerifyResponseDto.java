@@ -1,4 +1,4 @@
-package edu.upb.barber.service.integracion.stereum;
+package edu.upb.barber.integracion.stereum;
 
 import lombok.Data;
 //este solo verifica el pago, no devuelve mas datos, solo el estado del pago

@@ -1,4 +1,4 @@
-package edu.upb.barber.service.integracion;
+package edu.upb.barber.integracion;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

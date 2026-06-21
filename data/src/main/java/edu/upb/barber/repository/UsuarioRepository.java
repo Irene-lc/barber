@@ -15,7 +15,8 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, String> {
 
-    Optional<Usuario> findByEmail(String email);
+    @Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.empresa WHERE u.email = :email")
+    Optional<Usuario> findByEmail(@Param("email") String email);
 
     List<Usuario> findByNombre(String nombre);
 
@@ -49,8 +50,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String> {
             @Param("pActivo") boolean activo
     );
 
-    Optional<Usuario> findByNombreIgnoreCase(String nombre);
+    @Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.empresa WHERE LOWER(u.nombre) = LOWER(:nombre)")
+    Optional<Usuario> findByNombreIgnoreCase(@Param("nombre") String nombre);
 
-    @Query("SELECT u FROM Usuario u WHERE  u.id=:pId")
+    @Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.empresa WHERE u.id = :pId")
     Optional<Usuario> findByUserIdToValidateSession(@Param("pId") String pId);
 }
