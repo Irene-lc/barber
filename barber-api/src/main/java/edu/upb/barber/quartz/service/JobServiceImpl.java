@@ -1,6 +1,7 @@
 package edu.upb.barber.quartz.service;
 
 
+import edu.upb.barber.service.exception.OperationException;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.quartz.Trigger.TriggerState;
