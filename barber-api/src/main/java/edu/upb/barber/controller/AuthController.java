@@ -81,7 +81,7 @@ public class AuthController {
             // Crear Usuario
             Usuario usuario = Usuario.builder()
                     .nombre(data.nombre() != null ? data.nombre().trim() : data.email().split("@")[0])
-                    .apellido("")
+                    .apellido(data.apellido() != null ? data.apellido().trim() : "")
                     .email(data.email().trim())
                     .passwordHash(passwordEncoder.encode(data.password()))
                     .rol(RolUsuario.ROLE_CLIENTE)
