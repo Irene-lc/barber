@@ -21,6 +21,9 @@ public class EmpleadoRequestDto {
     @JsonProperty("usuario_id")
     private String usuarioId;
 
+    @JsonProperty("sucursal_id")
+    private String sucursalId;
+
     private Boolean disponible = true;
     private Boolean activo = true;
 }

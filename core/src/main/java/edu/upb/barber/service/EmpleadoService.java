@@ -15,6 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import edu.upb.barber.repository.EmpleadoSucursalRepository;
+import edu.upb.barber.repository.SucursalRepository;
+import edu.upb.barber.repository.entity.EmpleadoSucursal;
+import edu.upb.barber.repository.entity.Sucursal;
+import edu.upb.barber.repository.entity.enums.RolUsuario;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,6 +36,9 @@ public class EmpleadoService {
     private final EmpleadoRepository empleadoRepository;
     private final EmpresaRepository empresaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final EmpleadoSucursalRepository empleadoSucursalRepository;
+    private final SucursalRepository sucursalRepository;
+    private final PasswordEncoder passwordEncoder;
     private final LogService logService;
 
     @Transactional(readOnly = true)
@@ -88,16 +98,43 @@ public class EmpleadoService {
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
                 .orElseThrow(() -> new OperationException("Empresa no encontrada con id: " + dto.getEmpresaId()));
 
+        Usuario usuario = null;
+        if ((dto.getUsuarioId() == null || dto.getUsuarioId().isBlank()) && dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            if (usuarioRepository.findByEmail(dto.getEmail().trim()).isPresent()) {
+                throw new OperationException("Ya existe un usuario registrado con el email: " + dto.getEmail());
+            }
+
+            String nombreEmp = dto.getNombre().trim();
+            String apellidoEmp = "";
+            int primerEspacio = nombreEmp.indexOf(" ");
+            if (primerEspacio != -1) {
+                apellidoEmp = nombreEmp.substring(primerEspacio + 1).trim();
+                nombreEmp = nombreEmp.substring(0, primerEspacio).trim();
+            }
+
+            usuario = Usuario.builder()
+                    .nombre(nombreEmp)
+                    .apellido(apellidoEmp)
+                    .email(dto.getEmail().trim())
+                    .passwordHash(passwordEncoder.encode("Abc123**"))
+                    .rol(RolUsuario.ROLE_EMPLEADO)
+                    .empresa(empresa)
+                    .activo(true)
+                    .build();
+
+            usuario = usuarioRepository.save(usuario);
+        } else if (dto.getUsuarioId() != null && !dto.getUsuarioId().isBlank()) {
+            usuario = usuarioRepository.findById(dto.getUsuarioId())
+                    .orElseThrow(() -> new OperationException("Usuario no encontrado con id: " + dto.getUsuarioId()));
+        }
+
         Empleado empleado = new Empleado();
         empleado.setNombre(dto.getNombre());
         empleado.setTelefono(dto.getTelefono());
         empleado.setEspecialidad(dto.getEspecialidad());
         empleado.setFotoUrl(dto.getFotoUrl());
         empleado.setEmpresa(empresa);
-
-        if (dto.getUsuarioId() != null && !dto.getUsuarioId().isBlank()) {
-            Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
-                    .orElseThrow(() -> new OperationException("Usuario no encontrado con id: " + dto.getUsuarioId()));
+        if (usuario != null) {
             empleado.setUsuario(usuario);
         }
 
@@ -111,8 +148,21 @@ public class EmpleadoService {
             empleado.setActivo(dto.getActivo());
         }
 
+        Empleado guardado = empleadoRepository.save(empleado);
+
+        if (dto.getSucursalId() != null && !dto.getSucursalId().isBlank()) {
+            Sucursal sucursal = sucursalRepository.findById(dto.getSucursalId())
+                    .orElseThrow(() -> new OperationException("Sucursal no encontrada con id: " + dto.getSucursalId()));
+
+            EmpleadoSucursal es = new EmpleadoSucursal();
+            es.setEmpleado(guardado);
+            es.setSucursal(sucursal);
+            es.setActivo(true);
+            empleadoSucursalRepository.save(es);
+        }
+
         logService.info("Empleado guardado exitosamente: " + dto.getNombre());
-        return new EmpleadoResponseDto(empleadoRepository.save(empleado));
+        return new EmpleadoResponseDto(guardado);
     }
 
     @Transactional

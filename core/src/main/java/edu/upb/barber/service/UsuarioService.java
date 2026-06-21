@@ -10,6 +10,7 @@ import edu.upb.barber.repository.entity.Usuario;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -98,6 +99,7 @@ public class UsuarioService {
                 .toList();
     }
 
+    @Cacheable(value = "usuario", key = "#id")
     @Transactional(readOnly = true)
     public Optional<Usuario> findById(String id) {
         return usuarioRepository.findById(id);
@@ -161,11 +163,13 @@ public class UsuarioService {
         logService.info("Usuario actualizado exitosamente: " + usuarioId);
     }
 
+    @Cacheable(value = "usuario", key = "#id")
     @Transactional(readOnly = true)
     public Optional<Usuario> findByUserIdToValidateSession(String id) {
         return usuarioRepository.findByUserIdToValidateSession(id);
     }
 
+    @Cacheable(value = "usuario", key = "#username")
     @Transactional(readOnly = true)
     public Optional<Usuario> findByUsername(String username) {
         Optional<Usuario> byEmail = usuarioRepository.findByEmail(username);
