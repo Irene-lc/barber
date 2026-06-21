@@ -11,9 +11,12 @@ import edu.upb.barber.repository.entity.enums.RolUsuario;
 import edu.upb.barber.repository.ClienteRepository;
 import edu.upb.barber.repository.UsuarioRepository;
 import edu.upb.barber.repository.EmpresaRepository;
+import edu.upb.barber.service.EmailService;
+import edu.upb.barber.service.PasswordResetService;
 import edu.upb.barber.service.UsuarioService;
 
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +42,7 @@ import static org.springframework.http.ResponseEntity.ok;
 
 @Slf4j
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
 public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
@@ -48,7 +52,11 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
     private final EmpresaRepository empresaRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final PasswordResetService passwordResetService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;  // injected by @Value, not via constructor
 
 
     @PostMapping("/register")
@@ -167,6 +175,44 @@ public class AuthController {
             throw e;
         }
     }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "El email es requerido."));
+        }
+        usuarioRepository.findByEmail(email.trim()).ifPresent(usuario -> {
+            String token = passwordResetService.generarToken(usuario.getEmail());
+            String link = frontendUrl + "/#reset-password?token=" + token;
+            emailService.sendResetPassword(usuario.getEmail(), usuario.getNombre(), link);
+        });
+        // Siempre devolver OK para no exponer si el email existe
+        return ResponseEntity.ok(Map.of("message", "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."));
+    }
 
-
+    @PostMapping("/reset-password")
+    @CacheEvict(value = "usuario", allEntries = true)
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String newPassword = body.get("password");
+        if (token == null || token.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Token requerido."));
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("message", "La contraseña debe tener al menos 6 caracteres."));
+        }
+        String email = passwordResetService.validarToken(token);
+        if (email == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "El enlace es inválido o ha expirado."));
+        }
+        Optional<Usuario> optUser = usuarioRepository.findByEmail(email);
+        if (optUser.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Usuario no encontrado."));
+        }
+        Usuario usuario = optUser.get();
+        usuario.setPasswordHash(passwordEncoder.encode(newPassword));
+        usuarioRepository.save(usuario);
+        passwordResetService.invalidarToken(token);
+        return ResponseEntity.ok(Map.of("message", "Contraseña actualizada correctamente."));
+    }
 }

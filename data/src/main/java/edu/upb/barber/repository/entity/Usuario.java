@@ -108,6 +108,6 @@ public class Usuario extends AuditableEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return activo;
     }
 }

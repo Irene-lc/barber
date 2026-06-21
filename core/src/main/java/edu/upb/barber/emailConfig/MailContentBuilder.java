@@ -1,4 +1,4 @@
-package edu.upb.barber.service.emailConfig;
+package edu.upb.barber.emailConfig;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -43,4 +43,12 @@ public class MailContentBuilder {
         return this.templateEngine.process("citaConfirmada", ctx);
     }
 
+    public String sendResetPassword(String nombre, String resetLink) {
+        final Context ctx = new Context();
+        ctx.setVariable("nombre", nombre);
+        ctx.setVariable("resetLink", resetLink);
+        ctx.setVariable("imageX", "imageX");
+        ctx.setVariable("imageLinkedin", "imageLinkedin");
+        return this.templateEngine.process("mailResetPassword", ctx);
+    }
 }
