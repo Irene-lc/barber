@@ -20,6 +20,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -53,7 +55,47 @@ public class AgendaEventoService {
                 .orElseThrow(() -> new OperationException("Sucursal no encontrada con ID: " + request.getSucursalId()));
 
         Cliente cliente = null;
-        if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Usuario principal = null;
+        if (authentication != null && authentication.getPrincipal() instanceof Usuario) {
+            principal = (Usuario) authentication.getPrincipal();
+        }
+
+        if (principal != null && principal.getRol() == edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE) {
+            final String usuarioId = principal.getId();
+            final String empresaId = sucursal.getEmpresa().getId();
+            
+            cliente = clienteRepository.findByUsuarioIdAndEmpresaId(usuarioId, empresaId)
+                    .orElse(null);
+            
+            if (cliente == null) {
+                // Copiar datos de contacto de otro perfil de cliente si existe
+                List<Cliente> clientesExistentes = clienteRepository.findByUsuarioId(usuarioId);
+                String telefono = "";
+                String documento = "";
+                if (!clientesExistentes.isEmpty()) {
+                    Cliente primerCliente = clientesExistentes.get(0);
+                    telefono = primerCliente.getTelefono();
+                    documento = primerCliente.getDocumento();
+                }
+                
+                cliente = new Cliente();
+                String fullName = principal.getNombre();
+                if (principal.getApellido() != null && !principal.getApellido().isBlank()) {
+                    fullName += " " + principal.getApellido();
+                }
+                cliente.setNombre(fullName);
+                cliente.setTelefono(telefono);
+                cliente.setDocumento(documento);
+                cliente.setEmail(principal.getEmail());
+                cliente.setUsuario(principal);
+                cliente.setEmpresa(sucursal.getEmpresa());
+                cliente.setActivo(true);
+                
+                cliente = clienteRepository.save(cliente);
+                log.info("Cliente creado automáticamente para usuario {} en empresa {}", principal.getEmail(), sucursal.getEmpresa().getNombre());
+            }
+        } else if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
             cliente = clienteRepository.findById(request.getClienteId())
                     .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
