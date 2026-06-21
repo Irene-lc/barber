@@ -10,6 +10,7 @@ import edu.upb.barber.repository.entity.Usuario;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -90,6 +91,7 @@ public class UsuarioService {
         logService.info("Usuario guardado exitosamente: " + usuarioRequestDto.getEmail());
     }
 
+    @Cacheable(value = "listUsuario", key = "#id")
     @Transactional(readOnly = true)
     public List<UsuarioResponseDto> listar() {
         return usuarioRepository.findAll()

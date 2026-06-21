@@ -1,5 +1,10 @@
 package edu.upb.barber;
 
+import edu.upb.barber.job.EmailSenderJob;
+import edu.upb.barber.quartz.CronExpressionConstant;
+import edu.upb.barber.quartz.service.JobDto;
+import edu.upb.barber.quartz.service.JobService;
+import edu.upb.barber.quartz.service.JobUtil;
 import edu.upb.barber.repository.*;
 import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.*;
@@ -13,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Date;
 
 @Slf4j
 @Component
@@ -36,10 +42,16 @@ public class DataInitializer implements CommandLineRunner {
     private final EmpleadoSucursalRepository      empleadoSucursalRepository;
     private final EmailService emailService;
 
+    private final JobService jobService;
+
     @Override
-    public void run(String... args) {
+    public void run(String... args) throws Exception {
         init();
-        emailService.sendPassword("irene.landivar13@gmail.com","Irene","prueba");
+//        emailService.sendPassword("irene.landivar13@gmail.com","Irene","prueba");
+//        JobDto jobDto = EmailSenderJob.getJobDto(JobUtil.GROUP_NAME);
+//        if (!jobService.existJobName(jobDto.getGroupName(), jobDto.getJobName())) {
+//            jobService.scheduleCronJob(jobDto, new Date(), CronExpressionConstant.CRON_X_3_SEG, null, "Este Job envia correos");
+//        }
     }
 
     @Transactional
