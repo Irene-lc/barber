@@ -17,7 +17,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(
     name = "cliente",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uk_cliente_usuario", columnNames = "usuario_id")
+        @UniqueConstraint(name = "uk_cliente_usuario_empresa", columnNames = {"usuario_id", "empresa_id"})
     }
 )
 @Getter

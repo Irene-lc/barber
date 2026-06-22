@@ -58,6 +58,33 @@ public class AgendaEventoService {
                     .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
 
+        // Si el cliente es null y hay un usuario autenticado con Rol Cliente, resolver o crear su perfil de Cliente para esta empresa
+        if (cliente == null) {
+            Usuario currentUser = null;
+            if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
+                currentUser = (Usuario) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            }
+
+            if (currentUser != null && currentUser.getRol() == edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE) {
+                // Buscar si ya tiene un perfil de Cliente para la Empresa de la sucursal actual
+                Optional<Cliente> clienteExistente = clienteRepository.findByUsuarioIdAndEmpresaId(currentUser.getId(), sucursal.getEmpresa().getId());
+                if (clienteExistente.isPresent()) {
+                    cliente = clienteExistente.get();
+                } else {
+                    // Si no tiene perfil de Cliente en esta empresa, lo creamos ahora asociado a la Empresa de la sucursal de la cita
+                    cliente = new Cliente();
+                    cliente.setNombre(currentUser.getNombre() + (currentUser.getApellido() != null ? " " + currentUser.getApellido() : ""));
+                    cliente.setEmail(currentUser.getEmail());
+                    cliente.setUsuario(currentUser);
+                    cliente.setEmpresa(sucursal.getEmpresa());
+                    cliente.setActivo(true);
+                    cliente = clienteRepository.save(cliente);
+                    log.info("Perfil de Cliente creado automáticamente para el usuario: {} en la empresa: {}", currentUser.getEmail(), sucursal.getEmpresa().getId());
+                }
+            }
+        }
+
         Mascota mascota = null;
         if (request.getMascotaId() != null && !request.getMascotaId().isBlank()) {
             mascota = mascotaRepository.findById(request.getMascotaId())
