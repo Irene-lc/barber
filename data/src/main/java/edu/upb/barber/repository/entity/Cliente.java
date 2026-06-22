@@ -33,7 +33,7 @@ public class Cliente extends AuditableEntity {
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 

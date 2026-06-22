@@ -276,7 +276,27 @@ public class AgendaEventoService {
 
     @Transactional(readOnly = true)
     public List<AgendaEventoResponseDto> listar() {
-        return agendaEventoRepository.findAll().stream()
+        edu.upb.barber.repository.entity.Usuario currentUser = null;
+        if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof edu.upb.barber.repository.entity.Usuario) {
+            currentUser = (edu.upb.barber.repository.entity.Usuario) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+
+        List<AgendaEvento> eventos;
+        if (currentUser != null && currentUser.getRol() == edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE) {
+            List<String> clienteIds = clienteRepository.findByUsuarioId(currentUser.getId()).stream()
+                    .map(Cliente::getId)
+                    .toList();
+            if (clienteIds.isEmpty()) {
+                eventos = List.of();
+            } else {
+                eventos = agendaEventoRepository.findByClienteIdIn(clienteIds);
+            }
+        } else {
+            eventos = agendaEventoRepository.findAll();
+        }
+
+        return eventos.stream()
                 .map(ae -> {
                     AgendaEventoResponseDto dto = new AgendaEventoResponseDto(ae);
                     List<AgendaEventoResponseDto.DetalleDto> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(ae.getId()).stream()

@@ -9,6 +9,9 @@ public class ClienteRequestDto {
     @JsonProperty("empresa_id")
     private String empresaId;
 
+    @JsonProperty("usuario_id")
+    private String usuarioId;
+
     private String nombre;
     private String telefono;
     private String email;
