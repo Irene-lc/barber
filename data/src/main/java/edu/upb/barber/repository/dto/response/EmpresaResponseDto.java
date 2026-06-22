@@ -1,6 +1,8 @@
 package edu.upb.barber.repository.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.upb.barber.repository.entity.Empresa;
+import edu.upb.barber.repository.entity.enums.TipoEmpresa;
 import lombok.*;
 
 @Getter
@@ -18,6 +20,9 @@ public class EmpresaResponseDto {
     private String email;
     private boolean activo;
 
+    @JsonProperty("tipo")
+    private TipoEmpresa tipoEmpresa;
+
     public EmpresaResponseDto(Empresa empresa) {
         this.id = empresa.getId();
         this.nombre = empresa.getNombre();
@@ -26,6 +31,8 @@ public class EmpresaResponseDto {
         this.telefono = empresa.getTelefono();
         this.email = empresa.getEmail();
         this.activo = empresa.getActivo();
+        this.tipoEmpresa = empresa.getTipoEmpresa();
+
     }
 
     public EmpresaResponseDto(
@@ -36,5 +43,6 @@ public class EmpresaResponseDto {
         this.id = id;
         this.nombre = nombre;
         this.nit = nit;
+
     }
 }

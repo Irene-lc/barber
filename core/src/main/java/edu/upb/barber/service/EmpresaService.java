@@ -100,6 +100,9 @@ public class EmpresaService {
                     empresaRequestDto.getActivo());
         }
 
+
+        empresa.setTipoEmpresa(empresaRequestDto.getTipoEmpresa());
+
         empresaRepository.save(empresa);
         logService.info("Empresa registrada con exito: " + empresa.getNombre());
 
