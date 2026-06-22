@@ -20,6 +20,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -43,6 +45,7 @@ public class AgendaEventoService {
     private final LogService logService;
     private final VentaService ventaService;
     private final ProductoRepository productoRepository;
+    private final EmailService emailService;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -53,7 +56,47 @@ public class AgendaEventoService {
                 .orElseThrow(() -> new OperationException("Sucursal no encontrada con ID: " + request.getSucursalId()));
 
         Cliente cliente = null;
-        if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Usuario principal = null;
+        if (authentication != null && authentication.getPrincipal() instanceof Usuario) {
+            principal = (Usuario) authentication.getPrincipal();
+        }
+
+        if (principal != null && principal.getRol() == edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE) {
+            final String usuarioId = principal.getId();
+            final String empresaId = sucursal.getEmpresa().getId();
+            
+            cliente = clienteRepository.findByUsuarioIdAndEmpresaId(usuarioId, empresaId)
+                    .orElse(null);
+            
+            if (cliente == null) {
+                // Copiar datos de contacto de otro perfil de cliente si existe
+                List<Cliente> clientesExistentes = clienteRepository.findByUsuarioId(usuarioId);
+                String telefono = "";
+                String documento = "";
+                if (!clientesExistentes.isEmpty()) {
+                    Cliente primerCliente = clientesExistentes.get(0);
+                    telefono = primerCliente.getTelefono();
+                    documento = primerCliente.getDocumento();
+                }
+                
+                cliente = new Cliente();
+                String fullName = principal.getNombre();
+                if (principal.getApellido() != null && !principal.getApellido().isBlank()) {
+                    fullName += " " + principal.getApellido();
+                }
+                cliente.setNombre(fullName);
+                cliente.setTelefono(telefono);
+                cliente.setDocumento(documento);
+                cliente.setEmail(principal.getEmail());
+                cliente.setUsuario(principal);
+                cliente.setEmpresa(sucursal.getEmpresa());
+                cliente.setActivo(true);
+                
+                cliente = clienteRepository.save(cliente);
+                log.info("Cliente creado automáticamente para usuario {} en empresa {}", principal.getEmail(), sucursal.getEmpresa().getNombre());
+            }
+        } else if (request.getClienteId() != null && !request.getClienteId().isBlank()) {
             cliente = clienteRepository.findById(request.getClienteId())
                     .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
@@ -113,6 +156,75 @@ public class AgendaEventoService {
                         empleadoDto.getRolEnEvento() == null ? RolEmpleadoEvento.RESPONSABLE : empleadoDto.getRolEnEvento()
                 );
                 agendaEventoEmpleadoRepository.save(agendaEventoEmpleado);
+            }
+        }
+
+        // Enviar email de confirmación
+        if (cliente != null && cliente.getEmail() != null && !cliente.getEmail().isBlank()) {
+            try {
+                final String toEmail = cliente.getEmail().trim();
+                
+                List<String> serviceNames = new ArrayList<>();
+                BigDecimal totalSum = BigDecimal.ZERO;
+                if (request.getDetalles() != null) {
+                    for (AgendaEventoDetalleCreateDto detalleDto : request.getDetalles()) {
+                        if (detalleDto.getServicioId() != null && !detalleDto.getServicioId().isBlank()) {
+                            Optional<Servicio> sOpt = servicioRepository.findById(detalleDto.getServicioId());
+                            if (sOpt.isPresent()) {
+                                serviceNames.add(sOpt.get().getNombre());
+                            }
+                        } else if (detalleDto.getComboServicioId() != null && !detalleDto.getComboServicioId().isBlank()) {
+                            Optional<ComboServicio> cOpt = comboServicioRepository.findById(detalleDto.getComboServicioId());
+                            if (cOpt.isPresent()) {
+                                serviceNames.add(cOpt.get().getNombre());
+                            }
+                        }
+                        if (detalleDto.getPrecioAcordado() != null) {
+                            totalSum = totalSum.add(detalleDto.getPrecioAcordado());
+                        }
+                    }
+                }
+                String servicioNombre = String.join(", ", serviceNames);
+                if (servicioNombre.isEmpty()) {
+                    servicioNombre = "Servicios Varios";
+                }
+
+                List<String> employeeNames = new ArrayList<>();
+                if (request.getEmpleados() != null) {
+                    for (AgendaEventoEmpleadoCreateDto empDto : request.getEmpleados()) {
+                        Optional<Empleado> eOpt = empleadoRepository.findById(empDto.getEmpleadoId());
+                        if (eOpt.isPresent()) {
+                            employeeNames.add(eOpt.get().getNombre());
+                        }
+                    }
+                }
+                String empleadoNombre = employeeNames.isEmpty() ? "Asignado automáticamente" : String.join(", ", employeeNames);
+
+                java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", new java.util.Locale("es", "BO"));
+                String citaFecha = request.getInicio().format(dateFormatter);
+                if (citaFecha.length() > 0) {
+                    citaFecha = Character.toUpperCase(citaFecha.charAt(0)) + citaFecha.substring(1);
+                }
+
+                java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+                String citaHora = request.getInicio().format(timeFormatter) + " hs";
+
+                String precioTotal = totalSum.setScale(2, java.math.RoundingMode.HALF_UP).toString() + " Bs.";
+
+                String clienteNombre = cliente.getNombre();
+
+                emailService.sendCitaConfirmada(
+                        toEmail,
+                        clienteNombre,
+                        servicioNombre,
+                        empleadoNombre,
+                        citaFecha,
+                        citaHora,
+                        sucursal.getNombre(),
+                        precioTotal
+                );
+            } catch (Exception e) {
+                log.error("Error al enviar email de confirmacion de cita para evento " + agendaEvento.getId(), e);
             }
         }
 

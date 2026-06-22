@@ -20,6 +20,8 @@ public class ClienteResponseDto {
     private String documento;
     private String notas;
     private boolean activo;
+    @com.fasterxml.jackson.annotation.JsonProperty("empresa_id")
+    private String empresaId;
 
     public ClienteResponseDto(Cliente cliente) {
         this.id = cliente.getId();
@@ -29,6 +31,7 @@ public class ClienteResponseDto {
         this.documento = cliente.getDocumento();
         this.notas = cliente.getNotas();
         this.activo = cliente.isActivo();
+        this.empresaId = cliente.getEmpresa() != null ? cliente.getEmpresa().getId() : null;
     }
 
     public ClienteResponseDto(ClienteRequestDto clienteRequestDto) {

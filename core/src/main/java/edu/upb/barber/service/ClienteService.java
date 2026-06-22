@@ -73,6 +73,11 @@ public class ClienteService {
         cliente.setEmpresa(empresa);
         cliente.setActivo(dto.isActivo());
 
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof edu.upb.barber.repository.entity.Usuario) {
+            cliente.setUsuario((edu.upb.barber.repository.entity.Usuario) authentication.getPrincipal());
+        }
+
         logService.info("Cliente guardado exitosamente: " + dto.getNombre());
         return new ClienteResponseDto(clienteRepository.save(cliente));
     }

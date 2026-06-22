@@ -32,6 +32,44 @@ public class EmailService {
     private JavaMailSender javaMailSender;
 
     @Async("taskLog")
+    public void sendCitaConfirmada(
+            String to,
+            String clienteNombre,
+            String servicioNombre,
+            String empleadoNombre,
+            String citaFecha,
+            String citaHora,
+            String sucursalNombre,
+            String precioTotal
+    ) {
+        log.info("Enviando email de confirmacion de cita a: " + to);
+        MimeMessagePreparator messagePreparator = mimeMessage -> {
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            messageHelper.setTo(to);
+            messageHelper.setFrom(new InternetAddress(mailFrom));
+            messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
+            messageHelper.setSubject("Tu Cita en KLIPP ha sido Confirmada");
+            
+            String message = mailContentBuilder.buildCitaConfirmada(
+                    clienteNombre,
+                    servicioNombre,
+                    empleadoNombre,
+                    citaFecha,
+                    citaHora,
+                    sucursalNombre,
+                    precioTotal
+            );
+
+            messageHelper.setText(message, true);
+            messageHelper.addInline("banner", new ClassPathResource(BANNER_PNG));
+            messageHelper.addInline("imageLinkedin", new ClassPathResource(LINKEDIN_PNG));
+            messageHelper.addInline("imageX", new ClassPathResource(X_PNG));
+        };
+        javaMailSender.send(messagePreparator);
+        log.info("Email de confirmacion de cita enviado a: " + to);
+    }
+
+    @Async("taskLog")
     public void sendPassword(String to, String password) {
         log.info("Enviando email a: " + to);
         MimeMessagePreparator messagePreparator = mimeMessage -> {
