@@ -57,6 +57,13 @@ public class AgendaEventoResponseDto {
         private Double precioAcordado;
         @JsonProperty("duracion_estimada_minutos")
         private Integer duracionEstimadaMinutos;
+
+        @JsonProperty("producto_id")
+        private String productoId;
+        @JsonProperty("producto_nombre")
+        private String productoNombre;
+        private Integer cantidad;
+        private String tipo;
     }
 
     @Data

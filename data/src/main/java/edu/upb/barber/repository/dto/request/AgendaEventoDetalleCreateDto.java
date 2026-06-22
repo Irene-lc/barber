@@ -14,6 +14,11 @@ public class AgendaEventoDetalleCreateDto {
     @JsonProperty("combo_servicio_id")
     private String comboServicioId;
 
+    @JsonProperty("producto_id")
+    private String productoId;
+
+    private Integer cantidad;
+
     @JsonProperty("duracion_estimada_minutos")
     private Integer duracionEstimadaMinutos;
 

@@ -42,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
     private final AgendaEventoDetalleRepository   agendaEventoDetalleRepository;
     private final AgendaEventoEmpleadoRepository  agendaEventoEmpleadoRepository;
     private final EmpleadoSucursalRepository      empleadoSucursalRepository;
+    private final InventarioSucursalRepository    inventarioSucursalRepository;
 
     private final EmailService emailService;
     private final JobService jobService;
@@ -1266,9 +1267,30 @@ public class DataInitializer implements CommandLineRunner {
                         emp10.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
                         agendaEventoEmpleadoRepository.save(emp10);
 
-                        log.info("Citas VETERINARIA 'Klipp Pet Grooming' creadas");
                     }
                 });
+
+        if (inventarioSucursalRepository.count() == 0) {
+            log.info("Inicializando inventario de prueba para sucursales...");
+            List<Producto> productos = productoRepository.findAll();
+            List<Sucursal> sucursales = sucursalRepository.findAll();
+
+            for (Producto prod : productos) {
+                for (Sucursal suc : sucursales) {
+                    if (prod.getEmpresa() != null && suc.getEmpresa() != null &&
+                        prod.getEmpresa().getId().equals(suc.getEmpresa().getId())) {
+                        InventarioSucursal inv = new InventarioSucursal();
+                        inv.setProducto(prod);
+                        inv.setSucursal(suc);
+                        inv.setStockActual(15);
+                        inv.setStockMinimo(2);
+                        inv.setActivo(true);
+                        inventarioSucursalRepository.save(inv);
+                    }
+                }
+            }
+            log.info("Inventario de prueba inicializado.");
+        }
     }
 
 }

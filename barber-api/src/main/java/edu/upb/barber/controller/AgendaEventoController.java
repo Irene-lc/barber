@@ -124,4 +124,17 @@ public class AgendaEventoController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/ocupados")
+    public ResponseEntity<List<java.util.Map<String, String>>> obtenerIntervalosOcupados(
+            @RequestParam("empleadoId") String empleadoId,
+            @RequestParam("fecha") @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fecha
+    ) {
+        try {
+            return ResponseEntity.ok(agendaEventoService.obtenerIntervalosOcupados(empleadoId, fecha));
+        } catch (Exception e) {
+            log.error("Error al obtener intervalos ocupados", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

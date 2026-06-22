@@ -111,7 +111,7 @@ public class AgendaEventoService {
             for (AgendaEventoDetalleCreateDto detalleDto : request.getDetalles()) {
                 AgendaEventoDetalle detalle = new AgendaEventoDetalle();
                 detalle.setAgendaEvento(agendaEvento);
-                detalle.setDuracionEstimadaMinutos(detalleDto.getDuracionEstimadaMinutos());
+                detalle.setDuracionEstimadaMinutos(detalleDto.getDuracionEstimadaMinutos() != null ? detalleDto.getDuracionEstimadaMinutos() : 0);
                 detalle.setPrecioAcordado(detalleDto.getPrecioAcordado());
                 detalle.setNotas(detalleDto.getNotas());
 
@@ -119,10 +119,16 @@ public class AgendaEventoService {
                     Servicio servicio = servicioRepository.findById(detalleDto.getServicioId())
                             .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detalleDto.getServicioId()));
                     detalle.setServicio(servicio);
-                } else {
+                } else if (detalleDto.getComboServicioId() != null && !detalleDto.getComboServicioId().isBlank()) {
                     ComboServicio combo = comboServicioRepository.findById(detalleDto.getComboServicioId())
                             .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detalleDto.getComboServicioId()));
                     detalle.setComboServicio(combo);
+                } else if (detalleDto.getProductoId() != null && !detalleDto.getProductoId().isBlank()) {
+                    Producto producto = productoRepository.findById(detalleDto.getProductoId())
+                            .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detalleDto.getProductoId()));
+                    detalle.setProducto(producto);
+                    detalle.setCantidad(detalleDto.getCantidad() != null ? detalleDto.getCantidad() : 1);
+                    detalle.setDuracionEstimadaMinutos(0);
                 }
                 agendaEventoDetalleRepository.save(detalle);
             }
@@ -203,16 +209,20 @@ public class AgendaEventoService {
         for (AgendaEventoDetalleCreateDto detalle : detalles) {
             boolean tieneServicio = detalle.getServicioId() != null && !detalle.getServicioId().isBlank();
             boolean tieneCombo = detalle.getComboServicioId() != null && !detalle.getComboServicioId().isBlank();
+            boolean tieneProducto = detalle.getProductoId() != null && !detalle.getProductoId().isBlank();
 
-            if (tieneServicio == tieneCombo) {
-                log.error("Error en detalle AgendaEvento. Debe tener servicio_id o combo_servicio_id, pero no ambos");
-                logService.error("Error en detalle AgendaEvento. Debe tener servicio_id o combo_servicio_id, pero no ambos");
-                throw new OperationException("Cada detalle debe tener servicio_id o combo_servicio_id, pero no ambos");
+            int count = (tieneServicio ? 1 : 0) + (tieneCombo ? 1 : 0) + (tieneProducto ? 1 : 0);
+            if (count != 1) {
+                log.error("Error en detalle AgendaEvento. Debe tener exactamente uno de: servicio_id, combo_servicio_id o producto_id");
+                logService.error("Error en detalle AgendaEvento. Debe tener exactamente uno de: servicio_id, combo_servicio_id o producto_id");
+                throw new OperationException("Cada detalle debe tener exactamente uno de: servicio_id, combo_servicio_id o producto_id");
             }
-            if (detalle.getDuracionEstimadaMinutos() == null || detalle.getDuracionEstimadaMinutos() <= 0) {
-                log.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
-                logService.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
-                throw new OperationException("duracion_estimada_minutos debe ser mayor que cero");
+            if (!tieneProducto) {
+                if (detalle.getDuracionEstimadaMinutos() == null || detalle.getDuracionEstimadaMinutos() <= 0) {
+                    log.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
+                    logService.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
+                    throw new OperationException("duracion_estimada_minutos debe ser mayor que cero");
+                }
             }
             if (detalle.getPrecioAcordado() == null || detalle.getPrecioAcordado().compareTo(BigDecimal.ZERO) < 0) {
                 log.error("Error en detalle AgendaEvento. precio_acordado debe ser mayor o igual a cero");
@@ -300,12 +310,12 @@ public class AgendaEventoService {
                 .map(ae -> {
                     AgendaEventoResponseDto dto = new AgendaEventoResponseDto(ae);
                     List<AgendaEventoResponseDto.DetalleDto> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(ae.getId()).stream()
-                            .map(d -> new AgendaEventoResponseDto.DetalleDto(
-                                    d.getServicio() != null ? d.getServicio().getId() : null,
+                            .map(this::mapDetalleToDto) //
+                                    /* d.getServicio() != null ? d.getServicio().getId() : null,
                                     d.getServicio() != null ? d.getServicio().getNombre() : "Combo",
                                     d.getPrecioAcordado() != null ? d.getPrecioAcordado().doubleValue() : 0.0,
                                     d.getDuracionEstimadaMinutos()
-                            ))
+                            */
                             .toList();
                     dto.setDetalles(detalles);
 
@@ -329,12 +339,12 @@ public class AgendaEventoService {
                 .map(ae -> {
                     AgendaEventoResponseDto dto = new AgendaEventoResponseDto(ae);
                     List<AgendaEventoResponseDto.DetalleDto> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(ae.getId()).stream()
-                            .map(d -> new AgendaEventoResponseDto.DetalleDto(
-                                    d.getServicio() != null ? d.getServicio().getId() : null,
+                            .map(this::mapDetalleToDto) //
+                                    /* d.getServicio() != null ? d.getServicio().getId() : null,
                                     d.getServicio() != null ? d.getServicio().getNombre() : "Combo",
                                     d.getPrecioAcordado() != null ? d.getPrecioAcordado().doubleValue() : 0.0,
                                     d.getDuracionEstimadaMinutos()
-                            ))
+                            */
                             .toList();
                     dto.setDetalles(detalles);
 
@@ -394,7 +404,7 @@ public class AgendaEventoService {
             for (AgendaEventoDetalleCreateDto detalleDto : request.getDetalles()) {
                 AgendaEventoDetalle detalle = new AgendaEventoDetalle();
                 detalle.setAgendaEvento(agendaEvento);
-                detalle.setDuracionEstimadaMinutos(detalleDto.getDuracionEstimadaMinutos());
+                detalle.setDuracionEstimadaMinutos(detalleDto.getDuracionEstimadaMinutos() != null ? detalleDto.getDuracionEstimadaMinutos() : 0);
                 detalle.setPrecioAcordado(detalleDto.getPrecioAcordado());
                 detalle.setNotas(detalleDto.getNotas());
 
@@ -402,10 +412,16 @@ public class AgendaEventoService {
                     Servicio servicio = servicioRepository.findById(detalleDto.getServicioId())
                             .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detalleDto.getServicioId()));
                     detalle.setServicio(servicio);
-                } else {
+                } else if (detalleDto.getComboServicioId() != null && !detalleDto.getComboServicioId().isBlank()) {
                     ComboServicio combo = comboServicioRepository.findById(detalleDto.getComboServicioId())
                             .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detalleDto.getComboServicioId()));
                     detalle.setComboServicio(combo);
+                } else if (detalleDto.getProductoId() != null && !detalleDto.getProductoId().isBlank()) {
+                    Producto producto = productoRepository.findById(detalleDto.getProductoId())
+                            .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detalleDto.getProductoId()));
+                    detalle.setProducto(producto);
+                    detalle.setCantidad(detalleDto.getCantidad() != null ? detalleDto.getCantidad() : 1);
+                    detalle.setDuracionEstimadaMinutos(0);
                 }
                 agendaEventoDetalleRepository.save(detalle);
             }
@@ -634,6 +650,56 @@ public class AgendaEventoService {
         ventaService.crear(ventaRequest);
 
         logService.info("Walk-in registrado con éxito. Cita ID: " + agendaEvento.getId());
+    }
+
+    private AgendaEventoResponseDto.DetalleDto mapDetalleToDto(AgendaEventoDetalle d) {
+        String tipo = "SERVICIO";
+        String sId = null;
+        String sNombre = null;
+        if (d.getServicio() != null) {
+            sId = d.getServicio().getId();
+            sNombre = d.getServicio().getNombre();
+            tipo = "SERVICIO";
+        } else if (d.getComboServicio() != null) {
+            sId = d.getComboServicio().getId();
+            sNombre = d.getComboServicio().getNombre();
+            tipo = "COMBO";
+        } else if (d.getProducto() != null) {
+            sNombre = d.getProducto().getNombre() + " (Producto)";
+            tipo = "PRODUCTO";
+        }
+        return new AgendaEventoResponseDto.DetalleDto(
+                sId,
+                sNombre,
+                d.getPrecioAcordado() != null ? d.getPrecioAcordado().doubleValue() : 0.0,
+                d.getDuracionEstimadaMinutos(),
+                d.getProducto() != null ? d.getProducto().getId() : null,
+                d.getProducto() != null ? d.getProducto().getNombre() : null,
+                d.getCantidad(),
+                tipo
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, String>> obtenerIntervalosOcupados(String empleadoId, java.time.LocalDate fecha) {
+        java.time.OffsetDateTime inicioDia = fecha.atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime();
+        java.time.OffsetDateTime finDia = fecha.plusDays(1).atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime();
+
+        List<AgendaEventoEmpleado> asignaciones = agendaEventoEmpleadoRepository.findByEmpleadoId(empleadoId);
+        List<Map<String, String>> ocupados = new ArrayList<>();
+
+        for (AgendaEventoEmpleado aee : asignaciones) {
+            AgendaEvento ae = aee.getAgendaEvento();
+            if (ae.getEstado() != EstadoEvento.CANCELADO && ae.getEstado() != EstadoEvento.NO_SHOW) {
+                if (ae.getInicio().isBefore(finDia) && ae.getFin().isAfter(inicioDia)) {
+                    Map<String, String> intervalo = new HashMap<>();
+                    intervalo.put("inicio", ae.getInicio().toString());
+                    intervalo.put("fin", ae.getFin().toString());
+                    ocupados.add(intervalo);
+                }
+            }
+        }
+        return ocupados;
     }
 
 }
