@@ -45,6 +45,7 @@ public class AgendaEventoService {
     private final LogService logService;
     private final VentaService ventaService;
     private final ProductoRepository productoRepository;
+    private final EmailService emailService;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -155,6 +156,75 @@ public class AgendaEventoService {
                         empleadoDto.getRolEnEvento() == null ? RolEmpleadoEvento.RESPONSABLE : empleadoDto.getRolEnEvento()
                 );
                 agendaEventoEmpleadoRepository.save(agendaEventoEmpleado);
+            }
+        }
+
+        // Enviar email de confirmación
+        if (cliente != null && cliente.getEmail() != null && !cliente.getEmail().isBlank()) {
+            try {
+                final String toEmail = cliente.getEmail().trim();
+                
+                List<String> serviceNames = new ArrayList<>();
+                BigDecimal totalSum = BigDecimal.ZERO;
+                if (request.getDetalles() != null) {
+                    for (AgendaEventoDetalleCreateDto detalleDto : request.getDetalles()) {
+                        if (detalleDto.getServicioId() != null && !detalleDto.getServicioId().isBlank()) {
+                            Optional<Servicio> sOpt = servicioRepository.findById(detalleDto.getServicioId());
+                            if (sOpt.isPresent()) {
+                                serviceNames.add(sOpt.get().getNombre());
+                            }
+                        } else if (detalleDto.getComboServicioId() != null && !detalleDto.getComboServicioId().isBlank()) {
+                            Optional<ComboServicio> cOpt = comboServicioRepository.findById(detalleDto.getComboServicioId());
+                            if (cOpt.isPresent()) {
+                                serviceNames.add(cOpt.get().getNombre());
+                            }
+                        }
+                        if (detalleDto.getPrecioAcordado() != null) {
+                            totalSum = totalSum.add(detalleDto.getPrecioAcordado());
+                        }
+                    }
+                }
+                String servicioNombre = String.join(", ", serviceNames);
+                if (servicioNombre.isEmpty()) {
+                    servicioNombre = "Servicios Varios";
+                }
+
+                List<String> employeeNames = new ArrayList<>();
+                if (request.getEmpleados() != null) {
+                    for (AgendaEventoEmpleadoCreateDto empDto : request.getEmpleados()) {
+                        Optional<Empleado> eOpt = empleadoRepository.findById(empDto.getEmpleadoId());
+                        if (eOpt.isPresent()) {
+                            employeeNames.add(eOpt.get().getNombre());
+                        }
+                    }
+                }
+                String empleadoNombre = employeeNames.isEmpty() ? "Asignado automáticamente" : String.join(", ", employeeNames);
+
+                java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", new java.util.Locale("es", "BO"));
+                String citaFecha = request.getInicio().format(dateFormatter);
+                if (citaFecha.length() > 0) {
+                    citaFecha = Character.toUpperCase(citaFecha.charAt(0)) + citaFecha.substring(1);
+                }
+
+                java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+                String citaHora = request.getInicio().format(timeFormatter) + " hs";
+
+                String precioTotal = totalSum.setScale(2, java.math.RoundingMode.HALF_UP).toString() + " Bs.";
+
+                String clienteNombre = cliente.getNombre();
+
+                emailService.sendCitaConfirmada(
+                        toEmail,
+                        clienteNombre,
+                        servicioNombre,
+                        empleadoNombre,
+                        citaFecha,
+                        citaHora,
+                        sucursal.getNombre(),
+                        precioTotal
+                );
+            } catch (Exception e) {
+                log.error("Error al enviar email de confirmacion de cita para evento " + agendaEvento.getId(), e);
             }
         }
 
