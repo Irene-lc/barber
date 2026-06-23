@@ -31,6 +31,16 @@ public class InventarioSucursalController {
         }
     }
 
+    @GetMapping("/sucursal/{sucursalId}")
+    public ResponseEntity<List<InventarioSucursalResponseDto>> listarPorSucursal(@PathVariable String sucursalId) {
+        try {
+            return ResponseEntity.ok(inventarioSucursalService.listarPorSucursal(sucursalId));
+        } catch (Exception e) {
+            log.error("Error al listar inventario por sucursal", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<InventarioSucursalResponseDto> obtenerPorId(@PathVariable String id) {
         try {

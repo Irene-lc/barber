@@ -36,6 +36,13 @@ public class InventarioSucursalService {
     }
 
     @Transactional(readOnly = true)
+    public List<InventarioSucursalResponseDto> listarPorSucursal(String sucursalId) {
+        return inventarioSucursalRepository.findBySucursalId(sucursalId).stream()
+                .map(InventarioSucursalResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public Optional<InventarioSucursalResponseDto> findById(String id) {
         return inventarioSucursalRepository.findById(id)
                 .map(InventarioSucursalResponseDto::new);

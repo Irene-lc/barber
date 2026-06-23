@@ -31,6 +31,16 @@ public class ProductoController {
         }
     }
 
+    @GetMapping("/empresa/{empresaId}")
+    public ResponseEntity<List<ProductoResponseDto>> listarPorEmpresa(@PathVariable String empresaId) {
+        try {
+            return ResponseEntity.ok(productoService.listarPorEmpresa(empresaId));
+        } catch (Exception e) {
+            log.error("Error al listar productos por empresa", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductoResponseDto> obtenerPorId(@PathVariable String id) {
         try {

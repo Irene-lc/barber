@@ -34,6 +34,13 @@ public class ProductoService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProductoResponseDto> listarPorEmpresa(String empresaId) {
+        return productoRepository.findByEmpresaId(empresaId).stream()
+                .map(ProductoResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public Optional<ProductoResponseDto> findById(String id) {
         return productoRepository.findById(id)
                 .map(ProductoResponseDto::new);
