@@ -57,6 +57,12 @@ public class Usuario extends AuditableEntity implements UserDetails {
     @Column(name = "apellido", length = 120)
     private String apellido;
 
+    @Column(name = "telefono", length = 50)
+    private String telefono;
+
+    @Column(name = "documento", length = 50)
+    private String documento;
+
     @Column(name = "email", nullable = false, length = 150)
     private String email;
 

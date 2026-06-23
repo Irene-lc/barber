@@ -74,8 +74,10 @@ public class AgendaEventoService {
                 } else {
                     // Si no tiene perfil de Cliente en esta empresa, lo creamos ahora asociado a la Empresa de la sucursal de la cita
                     cliente = new Cliente();
-                    cliente.setNombre(currentUser.getNombre() + (currentUser.getApellido() != null ? " " + currentUser.getApellido() : ""));
+                    cliente.setNombre(currentUser.getNombre() + (currentUser.getApellido() != null && !currentUser.getApellido().isBlank() ? " " + currentUser.getApellido().trim() : ""));
                     cliente.setEmail(currentUser.getEmail());
+                    cliente.setTelefono(currentUser.getTelefono());
+                    cliente.setDocumento(currentUser.getDocumento());
                     cliente.setUsuario(currentUser);
                     cliente.setEmpresa(sucursal.getEmpresa());
                     cliente.setActivo(true);
