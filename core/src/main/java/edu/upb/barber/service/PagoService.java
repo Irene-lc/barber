@@ -45,6 +45,7 @@ public class PagoService {
     private final UsuarioRepository usuarioRepository;
     private final StereumPayClient stereumPayClient;
     private final LogService logService;
+    private final VentaService ventaService;
 
     @Transactional
     public GenerarPagoResponseDto generarCobroQR(GenerarPagoRequestDto request) throws Exception {
@@ -122,25 +123,7 @@ public class PagoService {
 
         pagoRepository.save(pago);
 
-        if (pago.getVenta() != null) {
-            Venta venta = pago.getVenta();
-            if (nuevoEstado == EstadoPago.PAGADO) {
-                venta.setEstado(EstadoVenta.COBRADA);
-            } else if (nuevoEstado == EstadoPago.ANULADO) {
-                venta.setEstado(EstadoVenta.ANULADA);
-            }
-            ventaRepository.save(venta);
-
-            if (venta.getAgendaEvento() != null) {
-                AgendaEvento evento = venta.getAgendaEvento();
-                if (nuevoEstado == EstadoPago.PAGADO) {
-                    evento.setEstado(EstadoEvento.FINALIZADO);
-                } else if (nuevoEstado == EstadoPago.ANULADO) {
-                    evento.setEstado(EstadoEvento.CANCELADO);
-                }
-                agendaEventoRepository.save(evento);
-            }
-        }
+        actualizarEstadosAsociados(pago, nuevoEstado);
 
         log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
         logService.info("Pago " + pago.getId() + " actualizado a estado " + nuevoEstado);
@@ -178,6 +161,7 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
+        actualizarEstadosAsociados(pago, pago.getEstadoPago());
         logService.info("Pago creado exitosamente: " + pago.getId());
         return new PagoResponseDto(pago);
     }
@@ -210,6 +194,7 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
+        actualizarEstadosAsociados(pago, pago.getEstadoPago());
         logService.info("Pago actualizado exitosamente: " + id);
         return new PagoResponseDto(pago);
     }
@@ -232,5 +217,44 @@ public class PagoService {
     @Transactional(readOnly = true)
     public Optional<PagoResponseDto> findById(String id) {
         return pagoRepository.findById(id).map(PagoResponseDto::new);
+    }
+
+    private void actualizarEstadosAsociados(Pago pago, EstadoPago nuevoEstado) throws Exception {
+        if (pago.getVenta() == null) return;
+
+        Venta venta = pago.getVenta();
+        EstadoVenta estadoAnteriorVenta = venta.getEstado();
+        EstadoVenta nuevoEstadoVenta = estadoAnteriorVenta;
+
+        if (nuevoEstado == EstadoPago.PAGADO) {
+            nuevoEstadoVenta = EstadoVenta.COBRADA;
+        } else if (nuevoEstado == EstadoPago.ANULADO) {
+            nuevoEstadoVenta = EstadoVenta.ANULADA;
+        }
+
+        if (nuevoEstadoVenta != estadoAnteriorVenta) {
+            venta.setEstado(nuevoEstadoVenta);
+            ventaRepository.save(venta);
+
+            // Gestionar el stock basado en la transición de estado de la venta
+            if (nuevoEstadoVenta == EstadoVenta.COBRADA && estadoAnteriorVenta != EstadoVenta.COBRADA) {
+                // Se cobra la venta, se descuenta el stock
+                ventaService.descontarStock(venta.getId());
+            } else if (nuevoEstadoVenta == EstadoVenta.ANULADA && estadoAnteriorVenta == EstadoVenta.COBRADA) {
+                // Se anula una venta previamente cobrada, se devuelve el stock
+                ventaService.restaurarStock(venta.getId());
+            }
+
+            // Actualizar la cita asociada si existe
+            if (venta.getAgendaEvento() != null) {
+                AgendaEvento evento = venta.getAgendaEvento();
+                if (nuevoEstadoVenta == EstadoVenta.COBRADA) {
+                    evento.setEstado(EstadoEvento.FINALIZADO);
+                } else if (nuevoEstadoVenta == EstadoVenta.ANULADA) {
+                    evento.setEstado(EstadoEvento.CANCELADO);
+                }
+                agendaEventoRepository.save(evento);
+            }
+        }
     }
 }

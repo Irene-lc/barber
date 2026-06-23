@@ -43,6 +43,8 @@ public class AgendaEventoService {
     private final LogService logService;
     private final VentaService ventaService;
     private final ProductoRepository productoRepository;
+    private final VentaRepository ventaRepository;
+    private final PagoRepository pagoRepository;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -648,10 +650,28 @@ public class AgendaEventoService {
         ventaRequest.setNotas("Venta automática generada por Walk-in");
         ventaRequest.setDetalles(detallesVenta);
 
-        // Crear venta (esto gestiona internamente la reducción de stock)
-        ventaService.crear(ventaRequest);
+        // Crear venta
+        edu.upb.barber.repository.dto.response.VentaResponseDto ventaRes = ventaService.crear(ventaRequest);
 
-        logService.info("Walk-in registrado con éxito. Cita ID: " + agendaEvento.getId());
+        // Como el walk-in se cobra inmediatamente, actualizamos la venta a COBRADA y creamos el pago en estado PAGADO
+        Venta venta = ventaRepository.findById(ventaRes.getId())
+                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + ventaRes.getId()));
+        
+        venta.setEstado(edu.upb.barber.repository.entity.enums.EstadoVenta.COBRADA);
+        ventaRepository.save(venta);
+
+        Pago pago = new Pago();
+        pago.setVenta(venta);
+        pago.setMonto(venta.getTotal());
+        pago.setMetodoPago(edu.upb.barber.repository.entity.enums.MetodoPago.EFECTIVO);
+        pago.setEstadoPago(edu.upb.barber.repository.entity.enums.EstadoPago.PAGADO);
+        pago.setPagadoEn(OffsetDateTime.now());
+        pagoRepository.save(pago);
+
+        // Descontar el stock de los productos asociados
+        ventaService.descontarStock(venta.getId());
+
+        logService.info("Walk-in registrado con éxito. Cita ID: " + agendaEvento.getId() + ", Pago ID: " + pago.getId());
     }
 
     private AgendaEventoResponseDto.DetalleDto mapDetalleToDto(AgendaEventoDetalle d) {

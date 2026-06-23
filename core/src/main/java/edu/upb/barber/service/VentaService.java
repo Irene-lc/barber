@@ -92,14 +92,6 @@ public class VentaService {
                     Producto producto = productoRepository.findById(detDto.getProductoId())
                             .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
                     detalle.setProducto(producto);
-
-                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                            .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
-                    if (invOpt.isPresent()) {
-                        InventarioSucursal inv = invOpt.get();
-                        inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
-                        inventarioSucursalRepository.save(inv);
-                    }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
                     ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
                             .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detDto.getComboServicioId()));
@@ -159,17 +151,6 @@ public class VentaService {
         }
 
         List<VentaDetalle> detallesAnteriores = ventaDetalleRepository.findByVentaId(id);
-        for (VentaDetalle det : detallesAnteriores) {
-            if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
-                Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                        .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
-                if (invOpt.isPresent()) {
-                    InventarioSucursal inv = invOpt.get();
-                    inv.setStockActual(inv.getStockActual() + det.getCantidad());
-                    inventarioSucursalRepository.save(inv);
-                }
-            }
-        }
         ventaDetalleRepository.deleteAll(detallesAnteriores);
 
         venta.setSucursal(sucursal);
@@ -214,14 +195,6 @@ public class VentaService {
                     Producto producto = productoRepository.findById(detDto.getProductoId())
                             .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
                     detalle.setProducto(producto);
-
-                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                            .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
-                    if (invOpt.isPresent()) {
-                        InventarioSucursal inv = invOpt.get();
-                        inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
-                        inventarioSucursalRepository.save(inv);
-                    }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
                     ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
                             .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detDto.getComboServicioId()));
@@ -250,6 +223,49 @@ public class VentaService {
                 .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + id));
 
         List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(id);
+        if (venta.getEstado() == EstadoVenta.COBRADA) {
+            for (VentaDetalle det : detalles) {
+                if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
+                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
+                            .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
+                    if (invOpt.isPresent()) {
+                        InventarioSucursal inv = invOpt.get();
+                        inv.setStockActual(inv.getStockActual() + det.getCantidad());
+                        inventarioSucursalRepository.save(inv);
+                    }
+                }
+            }
+        }
+
+        ventaDetalleRepository.deleteAll(detalles);
+        ventaRepository.delete(venta);
+        logService.info("Venta eliminada exitosamente: " + id);
+    }
+
+    @Transactional
+    public void descontarStock(String ventaId) throws Exception {
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + ventaId));
+        List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(ventaId);
+        for (VentaDetalle det : detalles) {
+            if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
+                Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
+                        .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
+                if (invOpt.isPresent()) {
+                    InventarioSucursal inv = invOpt.get();
+                    inv.setStockActual(Math.max(0, inv.getStockActual() - det.getCantidad()));
+                    inventarioSucursalRepository.save(inv);
+                    logService.info("Stock descontado diferido para producto: " + det.getProducto().getNombre() + ", cantidad: " + det.getCantidad());
+                }
+            }
+        }
+    }
+
+    @Transactional
+    public void restaurarStock(String ventaId) throws Exception {
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + ventaId));
+        List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(ventaId);
         for (VentaDetalle det : detalles) {
             if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
                 Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
@@ -258,12 +274,9 @@ public class VentaService {
                     InventarioSucursal inv = invOpt.get();
                     inv.setStockActual(inv.getStockActual() + det.getCantidad());
                     inventarioSucursalRepository.save(inv);
+                    logService.info("Stock restaurado diferido para producto: " + det.getProducto().getNombre() + ", cantidad: " + det.getCantidad());
                 }
             }
         }
-
-        ventaDetalleRepository.deleteAll(detalles);
-        ventaRepository.delete(venta);
-        logService.info("Venta eliminada exitosamente: " + id);
     }
 }
