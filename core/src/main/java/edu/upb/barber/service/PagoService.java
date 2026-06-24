@@ -44,6 +44,7 @@ public class PagoService {
     private final AgendaEventoRepository agendaEventoRepository;
     private final UsuarioRepository usuarioRepository;
     private final StereumPayClient stereumPayClient;
+    private final VentaService ventaService;
     private final LogService logService;
 
     @Transactional
@@ -115,36 +116,21 @@ public class PagoService {
         log.info("Actualizando Pago id={} de estado {} a {}", pago.getId(), pago.getEstadoPago(), nuevoEstado);
 
         pago.setEstadoPago(nuevoEstado);
-
         if (nuevoEstado == EstadoPago.PAGADO) {
             pago.setPagadoEn(OffsetDateTime.now());
         }
 
         pagoRepository.save(pago);
-
-        if (pago.getVenta() != null) {
-            Venta venta = pago.getVenta();
-            if (nuevoEstado == EstadoPago.PAGADO) {
-                venta.setEstado(EstadoVenta.COBRADA);
-            } else if (nuevoEstado == EstadoPago.ANULADO) {
-                venta.setEstado(EstadoVenta.ANULADA);
-            }
-            ventaRepository.save(venta);
-
-            if (venta.getAgendaEvento() != null) {
-                AgendaEvento evento = venta.getAgendaEvento();
-                if (nuevoEstado == EstadoPago.PAGADO) {
-                    evento.setEstado(EstadoEvento.FINALIZADO);
-                } else if (nuevoEstado == EstadoPago.ANULADO) {
-                    evento.setEstado(EstadoEvento.CANCELADO);
-                }
-                agendaEventoRepository.save(evento);
-            }
-        }
-
+        actualizarEstadoVentaYStock(pago, nuevoEstado);
         log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
         logService.info("Pago " + pago.getId() + " actualizado a estado " + nuevoEstado);
     }
+
+
+
+
+
+
 
     private EstadoPago mapearEstadoStereum(String statusStereum) {
         if (statusStereum == null) {
@@ -178,6 +164,7 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
+        actualizarEstadoVentaYStock(pago, pago.getEstadoPago());
         logService.info("Pago creado exitosamente: " + pago.getId());
         return new PagoResponseDto(pago);
     }
@@ -210,6 +197,7 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
+        actualizarEstadoVentaYStock(pago, pago.getEstadoPago());
         logService.info("Pago actualizado exitosamente: " + id);
         return new PagoResponseDto(pago);
     }
@@ -232,5 +220,46 @@ public class PagoService {
     @Transactional(readOnly = true)
     public Optional<PagoResponseDto> findById(String id) {
         return pagoRepository.findById(id).map(PagoResponseDto::new);
+    }
+
+    @Transactional
+    public void actualizarEstadoVentaYStock(Pago pago, EstadoPago nuevoEstado) {
+        if (pago.getVenta() == null) return;
+        Venta venta = pago.getVenta();
+
+        if (nuevoEstado == EstadoPago.PAGADO) {
+            if (venta.getEstado() != EstadoVenta.COBRADA) {
+                venta.setEstado(EstadoVenta.COBRADA);
+                ventaRepository.save(venta);
+                ventaService.descontarStockVenta(venta);
+
+                if (venta.getAgendaEvento() != null) {
+                    AgendaEvento evento = venta.getAgendaEvento();
+                    evento.setEstado(EstadoEvento.FINALIZADO);
+                    agendaEventoRepository.save(evento);
+                }
+            }
+        } else if (nuevoEstado == EstadoPago.ANULADO) {
+            if (venta.getEstado() == EstadoVenta.COBRADA) {
+                venta.setEstado(EstadoVenta.ANULADA);
+                ventaRepository.save(venta);
+                ventaService.restaurarStockVenta(venta);
+
+                if (venta.getAgendaEvento() != null) {
+                    AgendaEvento evento = venta.getAgendaEvento();
+                    evento.setEstado(EstadoEvento.CANCELADO);
+                    agendaEventoRepository.save(evento);
+                }
+            } else if (venta.getEstado() == EstadoVenta.ABIERTA) {
+                venta.setEstado(EstadoVenta.ANULADA);
+                ventaRepository.save(venta);
+
+                if (venta.getAgendaEvento() != null) {
+                    AgendaEvento evento = venta.getAgendaEvento();
+                    evento.setEstado(EstadoEvento.CANCELADO);
+                    agendaEventoRepository.save(evento);
+                }
+            }
+        }
     }
 }

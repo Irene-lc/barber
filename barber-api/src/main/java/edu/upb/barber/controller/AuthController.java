@@ -80,11 +80,13 @@ public class AuthController {
             // Crear Usuario
             Usuario usuario = Usuario.builder()
                     .nombre(data.nombre() != null ? data.nombre().trim() : data.email().split("@")[0])
-                    .apellido("")
+                    .apellido(data.apellido() != null ? data.apellido().trim() : "")
                     .email(data.email().trim())
                     .passwordHash(passwordEncoder.encode(data.password()))
                     .rol(RolUsuario.ROLE_CLIENTE)
                     .empresa(empresa)
+                    .telefono(data.telefono())
+                    .documento(data.documento())
                     .activo(true)
                     .build();
 
@@ -93,7 +95,9 @@ public class AuthController {
             // Crear Cliente únicamente si hay una empresa asociada
             if (empresa != null) {
                 Cliente cliente = new Cliente();
-                cliente.setNombre(data.nombre() != null ? data.nombre().trim() : "");
+                String nombreCompleto = (data.nombre() != null ? data.nombre().trim() : "") +
+                        (data.apellido() != null && !data.apellido().isBlank() ? " " + data.apellido().trim() : "");
+                cliente.setNombre(nombreCompleto.trim());
                 cliente.setEmail(data.email().trim());
                 cliente.setTelefono(data.telefono());
                 cliente.setDocumento(data.documento());

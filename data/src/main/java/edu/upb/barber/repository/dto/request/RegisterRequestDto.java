@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record RegisterRequestDto(
     String nombre,
+    String apellido,
     String email,
     String password,
     String telefono,

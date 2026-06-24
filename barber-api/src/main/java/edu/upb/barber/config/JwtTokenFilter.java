@@ -31,9 +31,7 @@ public class JwtTokenFilter extends OncePerRequestFilter implements Serializable
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String method = request.getMethod();
-        String path = request.getRequestURI();
-        return HttpMethod.OPTIONS.matches(method)
-                || (HttpMethod.GET.matches(method) && path.startsWith("/api/v1/"));
+        return HttpMethod.OPTIONS.matches(method);
     }
 
     @Override

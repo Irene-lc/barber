@@ -14,6 +14,10 @@ import edu.upb.barber.repository.dto.request.WalkInRequestDto;
 import edu.upb.barber.repository.dto.request.VentaRequestDto;
 import edu.upb.barber.repository.dto.request.VentaDetalleRequestDto;
 import edu.upb.barber.repository.entity.enums.TipoItemVenta;
+import edu.upb.barber.repository.entity.enums.MetodoPago;
+import edu.upb.barber.repository.entity.enums.EstadoPago;
+import edu.upb.barber.repository.dto.request.PagoRequestDto;
+import edu.upb.barber.repository.dto.response.VentaResponseDto;
 import edu.upb.barber.service.exception.OperationException;
 import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
@@ -42,6 +46,8 @@ public class AgendaEventoService {
     private final EmpleadoSucursalRepository empleadoSucursalRepository;
     private final LogService logService;
     private final VentaService ventaService;
+    private final PagoService pagoService;
+    private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
 
     @Transactional
@@ -76,6 +82,8 @@ public class AgendaEventoService {
                     cliente = new Cliente();
                     cliente.setNombre(currentUser.getNombre() + (currentUser.getApellido() != null ? " " + currentUser.getApellido() : ""));
                     cliente.setEmail(currentUser.getEmail());
+                    cliente.setTelefono(currentUser.getTelefono());
+                    cliente.setDocumento(currentUser.getDocumento());
                     cliente.setUsuario(currentUser);
                     cliente.setEmpresa(sucursal.getEmpresa());
                     cliente.setActivo(true);
@@ -302,6 +310,8 @@ public class AgendaEventoService {
             } else {
                 eventos = agendaEventoRepository.findByClienteIdIn(clienteIds);
             }
+        } else if (currentUser != null && currentUser.getEmpresa() != null) {
+            eventos = agendaEventoRepository.findBySucursal_Empresa(currentUser.getEmpresa());
         } else {
             eventos = agendaEventoRepository.findAll();
         }
@@ -672,8 +682,20 @@ public class AgendaEventoService {
         ventaRequest.setNotas("Venta automática generada por Walk-in");
         ventaRequest.setDetalles(detallesVenta);
 
-        // Crear venta (esto gestiona internamente la reducción de stock)
-        ventaService.crear(ventaRequest);
+        ventaRequest.setAgendaEventoId(agendaEvento.getId());
+
+        // Crear venta
+        VentaResponseDto ventaDto = ventaService.crear(ventaRequest);
+
+        // Crear el Pago como PAGADO (esto gestiona internamente la reducción de stock y marca la venta como COBRADA)
+        PagoRequestDto pagoRequest = new PagoRequestDto();
+        pagoRequest.setVentaId(ventaDto.getId());
+        pagoRequest.setMonto(ventaDto.getTotal());
+        pagoRequest.setMetodoPago(MetodoPago.EFECTIVO);
+        pagoRequest.setEstadoPago(EstadoPago.PAGADO);
+        pagoRequest.setPagadoEn(OffsetDateTime.now());
+
+        pagoService.crear(pagoRequest);
 
         logService.info("Walk-in registrado con éxito. Cita ID: " + agendaEvento.getId());
     }
