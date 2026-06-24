@@ -73,12 +73,6 @@ public class Usuario extends AuditableEntity implements UserDetails {
     @Column(name = "rol", nullable = false, length = 30)
     private RolUsuario rol;
 
-    @Column(name = "telefono", length = 30)
-    private String telefono;
-
-    @Column(name = "documento", length = 40)
-    private String documento;
-
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 
