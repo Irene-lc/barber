@@ -14,6 +14,10 @@ import edu.upb.barber.repository.dto.request.WalkInRequestDto;
 import edu.upb.barber.repository.dto.request.VentaRequestDto;
 import edu.upb.barber.repository.dto.request.VentaDetalleRequestDto;
 import edu.upb.barber.repository.entity.enums.TipoItemVenta;
+import edu.upb.barber.repository.entity.enums.MetodoPago;
+import edu.upb.barber.repository.entity.enums.EstadoPago;
+import edu.upb.barber.repository.dto.request.PagoRequestDto;
+import edu.upb.barber.repository.dto.response.VentaResponseDto;
 import edu.upb.barber.service.exception.OperationException;
 import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
@@ -42,9 +46,9 @@ public class AgendaEventoService {
     private final EmpleadoSucursalRepository empleadoSucursalRepository;
     private final LogService logService;
     private final VentaService ventaService;
-    private final ProductoRepository productoRepository;
+    private final PagoService pagoService;
     private final VentaRepository ventaRepository;
-    private final PagoRepository pagoRepository;
+    private final ProductoRepository productoRepository;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -76,7 +80,7 @@ public class AgendaEventoService {
                 } else {
                     // Si no tiene perfil de Cliente en esta empresa, lo creamos ahora asociado a la Empresa de la sucursal de la cita
                     cliente = new Cliente();
-                    cliente.setNombre(currentUser.getNombre() + (currentUser.getApellido() != null && !currentUser.getApellido().isBlank() ? " " + currentUser.getApellido().trim() : ""));
+                    cliente.setNombre(currentUser.getNombre() + (currentUser.getApellido() != null ? " " + currentUser.getApellido() : ""));
                     cliente.setEmail(currentUser.getEmail());
                     cliente.setTelefono(currentUser.getTelefono());
                     cliente.setDocumento(currentUser.getDocumento());
@@ -306,6 +310,8 @@ public class AgendaEventoService {
             } else {
                 eventos = agendaEventoRepository.findByClienteIdIn(clienteIds);
             }
+        } else if (currentUser != null && currentUser.getEmpresa() != null) {
+            eventos = agendaEventoRepository.findBySucursal_Empresa(currentUser.getEmpresa());
         } else {
             eventos = agendaEventoRepository.findAll();
         }
@@ -620,23 +626,49 @@ public class AgendaEventoService {
             totalVenta = totalVenta.add(detDto.getPrecioUnitario());
         }
 
-        // Agregar detalles de los productos vendidos (si los hay)
-        if (request.productoIds() != null) {
+        // Agregar detalles de los productos vendidos con cantidad (si los hay)
+        if (request.productos() != null) {
+            for (WalkInRequestDto.ProductoCantidadDto productoDto : request.productos()) {
+                if (productoDto == null || productoDto.productoId() == null || productoDto.productoId().isBlank()) {
+                    continue;
+                }
+                int cantidad = productoDto.cantidad() != null ? productoDto.cantidad() : 0;
+                if (cantidad <= 0) {
+                    continue;
+                }
+
+                Producto producto = productoRepository.findById(productoDto.productoId())
+                        .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + productoDto.productoId()));
+
+                BigDecimal precioUnitario = producto.getPrecioVenta() != null ? producto.getPrecioVenta() : BigDecimal.ZERO;
+                VentaDetalleRequestDto detDto = new VentaDetalleRequestDto();
+                detDto.setTipoItem(TipoItemVenta.PRODUCTO);
+                detDto.setProductoId(producto.getId());
+                detDto.setEmpleadoId(empleado.getId());
+                detDto.setCantidad(cantidad);
+                detDto.setPrecioUnitario(precioUnitario);
+                detDto.setDescuento(BigDecimal.ZERO);
+                detDto.setNotas("Producto vendido en Walk-in");
+                detallesVenta.add(detDto);
+                totalVenta = totalVenta.add(precioUnitario.multiply(BigDecimal.valueOf(cantidad)));
+            }
+        } else if (request.productoIds() != null) {
             for (String productoId : request.productoIds()) {
                 if (productoId == null || productoId.isBlank()) continue;
                 Producto producto = productoRepository.findById(productoId)
                         .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + productoId));
 
+                BigDecimal precioUnitario = producto.getPrecioVenta() != null ? producto.getPrecioVenta() : BigDecimal.ZERO;
                 VentaDetalleRequestDto detDto = new VentaDetalleRequestDto();
                 detDto.setTipoItem(TipoItemVenta.PRODUCTO);
                 detDto.setProductoId(producto.getId());
                 detDto.setEmpleadoId(empleado.getId());
                 detDto.setCantidad(1);
-                detDto.setPrecioUnitario(producto.getPrecioVenta() != null ? producto.getPrecioVenta() : BigDecimal.ZERO);
+                detDto.setPrecioUnitario(precioUnitario);
                 detDto.setDescuento(BigDecimal.ZERO);
                 detDto.setNotas("Producto vendido en Walk-in");
                 detallesVenta.add(detDto);
-                totalVenta = totalVenta.add(detDto.getPrecioUnitario());
+                totalVenta = totalVenta.add(precioUnitario);
             }
         }
 
@@ -650,28 +682,22 @@ public class AgendaEventoService {
         ventaRequest.setNotas("Venta automática generada por Walk-in");
         ventaRequest.setDetalles(detallesVenta);
 
+        ventaRequest.setAgendaEventoId(agendaEvento.getId());
+
         // Crear venta
-        edu.upb.barber.repository.dto.response.VentaResponseDto ventaRes = ventaService.crear(ventaRequest);
+        VentaResponseDto ventaDto = ventaService.crear(ventaRequest);
 
-        // Como el walk-in se cobra inmediatamente, actualizamos la venta a COBRADA y creamos el pago en estado PAGADO
-        Venta venta = ventaRepository.findById(ventaRes.getId())
-                .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + ventaRes.getId()));
-        
-        venta.setEstado(edu.upb.barber.repository.entity.enums.EstadoVenta.COBRADA);
-        ventaRepository.save(venta);
+        // Crear el Pago como PAGADO (esto gestiona internamente la reducción de stock y marca la venta como COBRADA)
+        PagoRequestDto pagoRequest = new PagoRequestDto();
+        pagoRequest.setVentaId(ventaDto.getId());
+        pagoRequest.setMonto(ventaDto.getTotal());
+        pagoRequest.setMetodoPago(MetodoPago.EFECTIVO);
+        pagoRequest.setEstadoPago(EstadoPago.PAGADO);
+        pagoRequest.setPagadoEn(OffsetDateTime.now());
 
-        Pago pago = new Pago();
-        pago.setVenta(venta);
-        pago.setMonto(venta.getTotal());
-        pago.setMetodoPago(edu.upb.barber.repository.entity.enums.MetodoPago.EFECTIVO);
-        pago.setEstadoPago(edu.upb.barber.repository.entity.enums.EstadoPago.PAGADO);
-        pago.setPagadoEn(OffsetDateTime.now());
-        pagoRepository.save(pago);
+        pagoService.crear(pagoRequest);
 
-        // Descontar el stock de los productos asociados
-        ventaService.descontarStock(venta.getId());
-
-        logService.info("Walk-in registrado con éxito. Cita ID: " + agendaEvento.getId() + ", Pago ID: " + pago.getId());
+        logService.info("Walk-in registrado con éxito. Cita ID: " + agendaEvento.getId());
     }
 
     private AgendaEventoResponseDto.DetalleDto mapDetalleToDto(AgendaEventoDetalle d) {

@@ -44,8 +44,8 @@ public class PagoService {
     private final AgendaEventoRepository agendaEventoRepository;
     private final UsuarioRepository usuarioRepository;
     private final StereumPayClient stereumPayClient;
-    private final LogService logService;
     private final VentaService ventaService;
+    private final LogService logService;
 
     @Transactional
     public GenerarPagoResponseDto generarCobroQR(GenerarPagoRequestDto request) throws Exception {
@@ -116,18 +116,21 @@ public class PagoService {
         log.info("Actualizando Pago id={} de estado {} a {}", pago.getId(), pago.getEstadoPago(), nuevoEstado);
 
         pago.setEstadoPago(nuevoEstado);
-
         if (nuevoEstado == EstadoPago.PAGADO) {
             pago.setPagadoEn(OffsetDateTime.now());
         }
 
         pagoRepository.save(pago);
-
-        actualizarEstadosAsociados(pago, nuevoEstado);
-
+        actualizarEstadoVentaYStock(pago, nuevoEstado);
         log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
         logService.info("Pago " + pago.getId() + " actualizado a estado " + nuevoEstado);
     }
+
+
+
+
+
+
 
     private EstadoPago mapearEstadoStereum(String statusStereum) {
         if (statusStereum == null) {
@@ -161,7 +164,7 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
-        actualizarEstadosAsociados(pago, pago.getEstadoPago());
+        actualizarEstadoVentaYStock(pago, pago.getEstadoPago());
         logService.info("Pago creado exitosamente: " + pago.getId());
         return new PagoResponseDto(pago);
     }
@@ -194,7 +197,7 @@ public class PagoService {
         pago.setTransaccionExternaId(request.getTransaccionExternaId());
 
         pago = pagoRepository.save(pago);
-        actualizarEstadosAsociados(pago, pago.getEstadoPago());
+        actualizarEstadoVentaYStock(pago, pago.getEstadoPago());
         logService.info("Pago actualizado exitosamente: " + id);
         return new PagoResponseDto(pago);
     }
@@ -219,41 +222,43 @@ public class PagoService {
         return pagoRepository.findById(id).map(PagoResponseDto::new);
     }
 
-    private void actualizarEstadosAsociados(Pago pago, EstadoPago nuevoEstado) throws Exception {
+    @Transactional
+    public void actualizarEstadoVentaYStock(Pago pago, EstadoPago nuevoEstado) {
         if (pago.getVenta() == null) return;
-
         Venta venta = pago.getVenta();
-        EstadoVenta estadoAnteriorVenta = venta.getEstado();
-        EstadoVenta nuevoEstadoVenta = estadoAnteriorVenta;
 
         if (nuevoEstado == EstadoPago.PAGADO) {
-            nuevoEstadoVenta = EstadoVenta.COBRADA;
-        } else if (nuevoEstado == EstadoPago.ANULADO) {
-            nuevoEstadoVenta = EstadoVenta.ANULADA;
-        }
+            if (venta.getEstado() != EstadoVenta.COBRADA) {
+                venta.setEstado(EstadoVenta.COBRADA);
+                ventaRepository.save(venta);
+                ventaService.descontarStockVenta(venta);
 
-        if (nuevoEstadoVenta != estadoAnteriorVenta) {
-            venta.setEstado(nuevoEstadoVenta);
-            ventaRepository.save(venta);
-
-            // Gestionar el stock basado en la transición de estado de la venta
-            if (nuevoEstadoVenta == EstadoVenta.COBRADA && estadoAnteriorVenta != EstadoVenta.COBRADA) {
-                // Se cobra la venta, se descuenta el stock
-                ventaService.descontarStock(venta.getId());
-            } else if (nuevoEstadoVenta == EstadoVenta.ANULADA && estadoAnteriorVenta == EstadoVenta.COBRADA) {
-                // Se anula una venta previamente cobrada, se devuelve el stock
-                ventaService.restaurarStock(venta.getId());
-            }
-
-            // Actualizar la cita asociada si existe
-            if (venta.getAgendaEvento() != null) {
-                AgendaEvento evento = venta.getAgendaEvento();
-                if (nuevoEstadoVenta == EstadoVenta.COBRADA) {
+                if (venta.getAgendaEvento() != null) {
+                    AgendaEvento evento = venta.getAgendaEvento();
                     evento.setEstado(EstadoEvento.FINALIZADO);
-                } else if (nuevoEstadoVenta == EstadoVenta.ANULADA) {
-                    evento.setEstado(EstadoEvento.CANCELADO);
+                    agendaEventoRepository.save(evento);
                 }
-                agendaEventoRepository.save(evento);
+            }
+        } else if (nuevoEstado == EstadoPago.ANULADO) {
+            if (venta.getEstado() == EstadoVenta.COBRADA) {
+                venta.setEstado(EstadoVenta.ANULADA);
+                ventaRepository.save(venta);
+                ventaService.restaurarStockVenta(venta);
+
+                if (venta.getAgendaEvento() != null) {
+                    AgendaEvento evento = venta.getAgendaEvento();
+                    evento.setEstado(EstadoEvento.CANCELADO);
+                    agendaEventoRepository.save(evento);
+                }
+            } else if (venta.getEstado() == EstadoVenta.ABIERTA) {
+                venta.setEstado(EstadoVenta.ANULADA);
+                ventaRepository.save(venta);
+
+                if (venta.getAgendaEvento() != null) {
+                    AgendaEvento evento = venta.getAgendaEvento();
+                    evento.setEstado(EstadoEvento.CANCELADO);
+                    agendaEventoRepository.save(evento);
+                }
             }
         }
     }

@@ -356,7 +356,7 @@ public class DataInitializer implements CommandLineRunner {
                 .noneMatch(e -> e.getNit().equals("1000000003"))) {
 
             Empresa vet = new Empresa();
-            vet.setNombre("Klipp Pet Grooming");
+            vet.setNombre("Klipp Estética de Mascotas");
             vet.setRazonSocial("Klipp Veterinaria SRL");
             vet.setNit("1000000003");
             vet.setTelefono("70300001");
@@ -413,7 +413,7 @@ public class DataInitializer implements CommandLineRunner {
             eDra.setNombre("Dra. Ana Suárez");
             eDra.setTelefono("70300010");
             eDra.setCargo(CargoEmpleado.OTRO);
-            eDra.setEspecialidad("Veterinaria general · Grooming canino");
+            eDra.setEspecialidad("Veterinaria general · Estética canina");
             eDra.setFotoUrl("AS");
             eDra.setDisponible(true);
             eDra.setActivo(true);
