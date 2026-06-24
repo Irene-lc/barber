@@ -46,8 +46,4 @@ jobs:
             --service ${{ secrets.ECS_SERVICE }} \
             --force-new-deployment \
             --region ${{ secrets.AWS_REGION }}
-
-          aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.ECS_SERVICE }} \
-            --region ${{ secrets.AWS_REGION }}
+          echo "Deploy iniciado. El servicio actualizara en los proximos minutos."
