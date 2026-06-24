@@ -41,6 +41,9 @@ public class Sucursal extends AuditableEntity {
     @Column(name = "telefono", length = 30)
     private String telefono;
 
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
+
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 

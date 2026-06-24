@@ -14,6 +14,9 @@ public class SucursalResponseDto {
     private String direccion;
     private String telefono;
 
+    @JsonProperty("imagen_url")
+    private String imagenUrl;
+
     @JsonProperty("empresa_id")
     private String empresaId;
 
