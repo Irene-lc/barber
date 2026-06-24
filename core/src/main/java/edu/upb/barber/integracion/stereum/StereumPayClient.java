@@ -32,19 +32,20 @@ public class StereumPayClient {
         RestClient restClient = create();
 //        ResponseEntity<StereumChargeResponseDto> response;
             ResponseEntity<String> response;
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("country", request.getCountry());
-            jsonObject.put("amount", request.getAmount());
-            jsonObject.put("currency", request.getCurrency());
-            jsonObject.put("network", request.getNetwork());
-            jsonObject.put("idempotency_key", request.getIdempotencyKey());
-            jsonObject.put("charge_reason", request.getChargeReason());
-            jsonObject.put("reservation_validity_time", request.getReservationValidityTime());
-            JSONObject customerJson = new JSONObject();
-            customerJson.put("name", request.getCustomer().getName());
-            customerJson.put("lastname", request.getCustomer().getLastname());
-            customerJson.put("document_number", request.getCustomer().getDocumentNumber());
-            jsonObject.put("customer", customerJson);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("country", request.getCountry());
+        jsonObject.put("amount", request.getAmount());
+        jsonObject.put("currency", request.getCurrency());
+        jsonObject.put("network", request.getNetwork());
+        jsonObject.put("idempotency_key", request.getIdempotencyKey());
+        jsonObject.put("charge_reason", request.getChargeReason());
+        jsonObject.put("reservation_validity_time", request.getReservationValidityTime());
+        jsonObject.put("account_id", request.getAccountId());   // <-- agregar esta línea
+        JSONObject customerJson = new JSONObject();
+        customerJson.put("name", request.getCustomer().getName());
+        customerJson.put("lastname", request.getCustomer().getLastname());
+        customerJson.put("document_number", request.getCustomer().getDocumentNumber());
+        jsonObject.put("customer", customerJson);
 
 
         try {

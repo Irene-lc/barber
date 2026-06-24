@@ -72,6 +72,7 @@ public class PagoService {
         chargeRequest.setIdempotencyKey(UUID.randomUUID().toString());
         chargeRequest.setChargeReason("Cobro de barberia Venta: " + venta.getId());
         chargeRequest.setReservationValidityTime("15");
+        chargeRequest.setAccountId("0b34db42-c94f-4661-b259-1f48f8f01b16");
         chargeRequest.setCustomer(customerDto);
 
         log.info("Llamando a Stereum para generar QR por un monto de {}", chargeRequest.getAmount());
