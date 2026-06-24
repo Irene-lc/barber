@@ -9,15 +9,18 @@ public class StereumChargeRequestDto {
     private String amount;
     private String currency;
     private String network;
-    
+
     @JsonProperty("idempotency_key")
     private String idempotencyKey; //clave unica para evitar cargos duplicados
-    
+
     @JsonProperty("charge_reason")
     private String chargeReason;
-    
+
     @JsonProperty("reservation_validity_time")
     private String reservationValidityTime; //tiempo del qr
-    
+
+    @JsonProperty("account_id")
+    private String accountId;
+
     private StereumCustomerDto customer;
 }
