@@ -70,6 +70,7 @@ public class ProductoService {
         Producto producto = new Producto();
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
+        producto.setImagenUrl(dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank() ? dto.getImagenUrl() : null);
         producto.setPrecioVenta(BigDecimal.valueOf(dto.getPrecio()));
         producto.setEmpresa(empresa);
 
@@ -99,6 +100,9 @@ public class ProductoService {
 
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
+        if (dto.getImagenUrl() != null) {
+            producto.setImagenUrl(dto.getImagenUrl().isBlank() ? null : dto.getImagenUrl());
+        }
         producto.setPrecioVenta(BigDecimal.valueOf(dto.getPrecio()));
 
         if (dto.getEmpresaId() != null && !dto.getEmpresaId().isBlank()) {

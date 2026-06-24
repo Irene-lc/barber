@@ -10,6 +10,9 @@ public class ProductoRequestDto {
     private String descripcion;
     private Double precio;
 
+    @JsonProperty("imagen_url")
+    private String imagenUrl;
+
     @JsonProperty("empresa_id")
     private String empresaId;
 

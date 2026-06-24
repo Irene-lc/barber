@@ -101,6 +101,7 @@ public class ServicioService {
         Servicio servicio = new Servicio();
         servicio.setNombre(dto.getNombre());
         servicio.setDescripcion(dto.getDescripcion());
+        servicio.setImagenUrl(dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank() ? dto.getImagenUrl() : null);
         servicio.setPrecioBase(BigDecimal.valueOf(dto.getPrecio()));
         servicio.setDuracionMinutos(dto.getDuracion());
         servicio.setEmpresa(empresa);
@@ -146,6 +147,9 @@ public class ServicioService {
 
         servicio.setNombre(dto.getNombre());
         servicio.setDescripcion(dto.getDescripcion());
+        if (dto.getImagenUrl() != null) {
+            servicio.setImagenUrl(dto.getImagenUrl().isBlank() ? null : dto.getImagenUrl());
+        }
         servicio.setPrecioBase(BigDecimal.valueOf(dto.getPrecio()));
         servicio.setDuracionMinutos(dto.getDuracion());
 

@@ -42,6 +42,9 @@ public class Producto extends AuditableEntity {
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
+
     @Column(name = "precio_venta", nullable = false, precision = 12, scale = 2)
     private BigDecimal precioVenta;
 

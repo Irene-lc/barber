@@ -89,6 +89,7 @@ public class SucursalService {
         sucursal.setNombre(dto.getNombre());
         sucursal.setDireccion(dto.getDireccion());
         sucursal.setTelefono(dto.getTelefono());
+        sucursal.setImagenUrl(dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank() ? dto.getImagenUrl() : null);
         sucursal.setEmpresa(empresa);
         if (dto.getActivo() != null) {
             sucursal.setActivo(dto.getActivo());
@@ -112,6 +113,9 @@ public class SucursalService {
         sucursal.setNombre(dto.getNombre());
         sucursal.setDireccion(dto.getDireccion());
         sucursal.setTelefono(dto.getTelefono());
+        if (dto.getImagenUrl() != null) {
+            sucursal.setImagenUrl(dto.getImagenUrl().isBlank() ? null : dto.getImagenUrl());
+        }
 
         if (dto.getEmpresaId() != null && !dto.getEmpresaId().isBlank()) {
             Usuario currentUser = null;
@@ -158,6 +162,7 @@ public class SucursalService {
                 .nombre(sucursal.getNombre())
                 .direccion(sucursal.getDireccion())
                 .telefono(sucursal.getTelefono())
+                .imagenUrl(sucursal.getImagenUrl())
                 .empresaId(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getId() : null)
                 .empresaNombre(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getNombre() : null)
                 .tipoEmpresa(sucursal.getEmpresa() != null ? sucursal.getEmpresa().getTipoEmpresa() : null)

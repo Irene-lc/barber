@@ -1,5 +1,6 @@
 package edu.upb.barber.repository.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.upb.barber.repository.entity.Producto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,10 @@ public class ProductoResponseDto {
     private String id;
     private String nombre;
     private String descripcion;
+
+    @JsonProperty("imagen_url")
+    private String imagenUrl;
+
     private Double precio;
     private String empresaId;
     private String empresaNombre;
@@ -24,6 +29,7 @@ public class ProductoResponseDto {
         this.id = producto.getId();
         this.nombre = producto.getNombre();
         this.descripcion = producto.getDescripcion();
+        this.imagenUrl = producto.getImagenUrl();
         this.precio = producto.getPrecioVenta() != null ? producto.getPrecioVenta().doubleValue() : 0.0;
         if (producto.getEmpresa() != null) {
             this.empresaId = producto.getEmpresa().getId();

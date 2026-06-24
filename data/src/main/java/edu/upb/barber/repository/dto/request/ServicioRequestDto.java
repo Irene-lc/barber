@@ -11,6 +11,9 @@ public class ServicioRequestDto {
     private Double precio;
     private Integer duracion;
 
+    @JsonProperty("imagen_url")
+    private String imagenUrl;
+
     @JsonProperty("empresa_id")
     private String empresaId;
 
