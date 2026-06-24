@@ -17,8 +17,10 @@ public class MascotaResponseDto {
 
     private Integer edad;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("cliente_id")
     private String clienteId;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("raza_id")
     private String razaId;
 
     private Boolean activo;

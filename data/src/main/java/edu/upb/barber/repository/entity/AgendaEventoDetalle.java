@@ -39,11 +39,18 @@ public class AgendaEventoDetalle extends AuditableEntity {
     @JoinColumn(name = "combo_servicio_id")
     private ComboServicio comboServicio;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "producto_id")
+    private Producto producto;
+
     @Column(name = "duracion_estimada_minutos", nullable = false)
     private int duracionEstimadaMinutos;
 
     @Column(name = "precio_acordado", nullable = false, precision = 12, scale = 2)
     private BigDecimal precioAcordado;
+
+    @Column(name = "cantidad")
+    private Integer cantidad;
 
     @Column(name = "notas", columnDefinition = "TEXT")
     private String notas;

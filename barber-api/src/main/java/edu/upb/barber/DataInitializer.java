@@ -15,6 +15,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.List;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -40,9 +42,11 @@ public class DataInitializer implements CommandLineRunner {
     private final AgendaEventoDetalleRepository   agendaEventoDetalleRepository;
     private final AgendaEventoEmpleadoRepository  agendaEventoEmpleadoRepository;
     private final EmpleadoSucursalRepository      empleadoSucursalRepository;
+    private final InventarioSucursalRepository    inventarioSucursalRepository;
 
     private final EmailService emailService;
     private final JobService jobService;
+    private final JdbcTemplate jdbcTemplate;
 
 
     @Override
@@ -57,6 +61,25 @@ public class DataInitializer implements CommandLineRunner {
 
     @Transactional
     public void init() {
+        // Drop unique constraint on usuario_id in table cliente if exists to support multiple tenants per user
+        try {
+            jdbcTemplate.execute("ALTER TABLE cliente DROP CONSTRAINT IF EXISTS ukid7jmosqg8hkqiqw4vf50xipm");
+            List<String> constraints = jdbcTemplate.queryForList(
+                "SELECT conname FROM pg_constraint c " +
+                "JOIN pg_class t ON c.conrelid = t.oid " +
+                "JOIN pg_namespace n ON t.relnamespace = n.oid " +
+                "WHERE t.relname = 'cliente' AND c.contype = 'u' " +
+                "AND ARRAY(SELECT attname FROM pg_attribute WHERE attrelid = t.oid AND attnum = ANY(c.conkey)) = ARRAY['usuario_id']",
+                String.class
+            );
+            for (String constraintName : constraints) {
+                jdbcTemplate.execute("ALTER TABLE cliente DROP CONSTRAINT IF EXISTS " + constraintName);
+                log.info("Unique constraint dropped: " + constraintName);
+            }
+        } catch (Exception e) {
+            log.warn("Could not drop unique constraint on usuario_id in cliente table: " + e.getMessage());
+        }
+
         String password = "Abc123**";
         log.info("DataInitializer: verificando datos de prueba...");
 
@@ -333,7 +356,7 @@ public class DataInitializer implements CommandLineRunner {
                 .noneMatch(e -> e.getNit().equals("1000000003"))) {
 
             Empresa vet = new Empresa();
-            vet.setNombre("Klipp Pet Grooming");
+            vet.setNombre("Klipp Estética de Mascotas");
             vet.setRazonSocial("Klipp Veterinaria SRL");
             vet.setNit("1000000003");
             vet.setTelefono("70300001");
@@ -390,7 +413,7 @@ public class DataInitializer implements CommandLineRunner {
             eDra.setNombre("Dra. Ana Suárez");
             eDra.setTelefono("70300010");
             eDra.setCargo(CargoEmpleado.OTRO);
-            eDra.setEspecialidad("Veterinaria general · Grooming canino");
+            eDra.setEspecialidad("Veterinaria general · Estética canina");
             eDra.setFotoUrl("AS");
             eDra.setDisponible(true);
             eDra.setActivo(true);
@@ -1244,259 +1267,30 @@ public class DataInitializer implements CommandLineRunner {
                         emp10.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
                         agendaEventoEmpleadoRepository.save(emp10);
 
-        log.info("Citas VETERINARIA 'Klipp Pet Grooming' creadas");
                     }
                 });
 
-        // ─────────────────────────────────────────────────────
-        // CITAS DE HOY (FINALIZADAS) — Para probar "Cuadre Caja"
-        // ─────────────────────────────────────────────────────
+        if (inventarioSucursalRepository.count() == 0) {
+            log.info("Inicializando inventario de prueba para sucursales...");
+            List<Producto> productos = productoRepository.findAll();
+            List<Sucursal> sucursales = sucursalRepository.findAll();
 
-        // --- BARBERÍA: cobros de hoy ---
-        empresaRepository.findAll().stream()
-                .filter(e -> e.getNit().equals("1000000001"))
-                .findFirst()
-                .ifPresent(barberia -> {
-                    long countHoy = agendaEventoRepository.findBySucursal_Empresa(barberia).stream()
-                            .filter(ev -> ev.getEstado() == EstadoEvento.FINALIZADO
-                                    && ev.getInicio() != null
-                                    && ev.getInicio().toLocalDate().equals(java.time.LocalDate.now()))
-                            .count();
-
-                    if (countHoy == 0) {
-                        Sucursal sucBarber    = sucursalRepository.findByEmpresa(barberia).get(0);
-                        Usuario recepBarber   = usuarioRepository.findByEmail("recep@klipp-barber.com").orElseThrow();
-                        Cliente juan          = clienteRepository.findByEmailAndEmpresa("juan@gmail.com", barberia).orElseThrow();
-                        Cliente diego         = clienteRepository.findByEmailAndEmpresa("diego@gmail.com", barberia).orElseThrow();
-                        Empleado miguel       = empleadoRepository.findByUsuario_Email("miguel@klipp-barber.com").orElseThrow();
-                        Empleado carlos       = empleadoRepository.findByUsuario_Email("carlos@klipp-barber.com").orElseThrow();
-                        Servicio corteClasico = servicioRepository.findByEmpresaAndNombre(barberia, "Corte clásico").orElseThrow();
-                        Servicio skinFade     = servicioRepository.findByEmpresaAndNombre(barberia, "Skin fade").orElseThrow();
-                        Servicio corteBarba   = servicioRepository.findByEmpresaAndNombre(barberia, "Corte + barba").orElseThrow();
-                        Servicio disenoBarba  = servicioRepository.findByEmpresaAndNombre(barberia, "Diseño de barba").orElseThrow();
-                        Servicio afeitado     = servicioRepository.findByEmpresaAndNombre(barberia, "Afeitado navaja").orElseThrow();
-
-                        // Cobro 1 — Juan, corte clásico con Miguel, 08:00
-                        AgendaEvento hb1 = new AgendaEvento();
-                        hb1.setCliente(juan); hb1.setSucursal(sucBarber); hb1.setCreadoPorUsuario(recepBarber);
-                        hb1.setTipoEvento(TipoEvento.CITA); hb1.setEstado(EstadoEvento.FINALIZADO);
-                        hb1.setInicio(OffsetDateTime.now().withHour(8).withMinute(0).withSecond(0).withNano(0));
-                        hb1.setFin(OffsetDateTime.now().withHour(8).withMinute(30).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hb1);
-                        AgendaEventoDetalle dhb1 = new AgendaEventoDetalle();
-                        dhb1.setAgendaEvento(hb1); dhb1.setServicio(corteClasico);
-                        dhb1.setDuracionEstimadaMinutos(corteClasico.getDuracionMinutos());
-                        dhb1.setPrecioAcordado(corteClasico.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhb1);
-                        AgendaEventoEmpleado ehb1 = new AgendaEventoEmpleado();
-                        ehb1.setAgendaEvento(hb1); ehb1.setEmpleado(miguel); ehb1.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehb1);
-
-                        // Cobro 2 — Diego, skin fade con Carlos, 09:00
-                        AgendaEvento hb2 = new AgendaEvento();
-                        hb2.setCliente(diego); hb2.setSucursal(sucBarber); hb2.setCreadoPorUsuario(recepBarber);
-                        hb2.setTipoEvento(TipoEvento.CITA); hb2.setEstado(EstadoEvento.FINALIZADO);
-                        hb2.setInicio(OffsetDateTime.now().withHour(9).withMinute(0).withSecond(0).withNano(0));
-                        hb2.setFin(OffsetDateTime.now().withHour(9).withMinute(40).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hb2);
-                        AgendaEventoDetalle dhb2 = new AgendaEventoDetalle();
-                        dhb2.setAgendaEvento(hb2); dhb2.setServicio(skinFade);
-                        dhb2.setDuracionEstimadaMinutos(skinFade.getDuracionMinutos());
-                        dhb2.setPrecioAcordado(skinFade.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhb2);
-                        AgendaEventoEmpleado ehb2 = new AgendaEventoEmpleado();
-                        ehb2.setAgendaEvento(hb2); ehb2.setEmpleado(carlos); ehb2.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehb2);
-
-                        // Cobro 3 — Juan, corte + barba + afeitado con Miguel, 10:00
-                        AgendaEvento hb3 = new AgendaEvento();
-                        hb3.setCliente(juan); hb3.setSucursal(sucBarber); hb3.setCreadoPorUsuario(recepBarber);
-                        hb3.setTipoEvento(TipoEvento.CITA); hb3.setEstado(EstadoEvento.FINALIZADO);
-                        hb3.setInicio(OffsetDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0));
-                        hb3.setFin(OffsetDateTime.now().withHour(11).withMinute(20).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hb3);
-                        AgendaEventoDetalle dhb3a = new AgendaEventoDetalle();
-                        dhb3a.setAgendaEvento(hb3); dhb3a.setServicio(corteBarba);
-                        dhb3a.setDuracionEstimadaMinutos(corteBarba.getDuracionMinutos());
-                        dhb3a.setPrecioAcordado(corteBarba.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhb3a);
-                        AgendaEventoDetalle dhb3b = new AgendaEventoDetalle();
-                        dhb3b.setAgendaEvento(hb3); dhb3b.setServicio(afeitado);
-                        dhb3b.setDuracionEstimadaMinutos(afeitado.getDuracionMinutos());
-                        dhb3b.setPrecioAcordado(afeitado.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhb3b);
-                        AgendaEventoEmpleado ehb3 = new AgendaEventoEmpleado();
-                        ehb3.setAgendaEvento(hb3); ehb3.setEmpleado(miguel); ehb3.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehb3);
-
-                        // Cobro 4 — Diego, diseño de barba con Carlos, 12:00
-                        AgendaEvento hb4 = new AgendaEvento();
-                        hb4.setCliente(diego); hb4.setSucursal(sucBarber); hb4.setCreadoPorUsuario(recepBarber);
-                        hb4.setTipoEvento(TipoEvento.CITA); hb4.setEstado(EstadoEvento.FINALIZADO);
-                        hb4.setInicio(OffsetDateTime.now().withHour(12).withMinute(0).withSecond(0).withNano(0));
-                        hb4.setFin(OffsetDateTime.now().withHour(12).withMinute(25).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hb4);
-                        AgendaEventoDetalle dhb4 = new AgendaEventoDetalle();
-                        dhb4.setAgendaEvento(hb4); dhb4.setServicio(disenoBarba);
-                        dhb4.setDuracionEstimadaMinutos(disenoBarba.getDuracionMinutos());
-                        dhb4.setPrecioAcordado(disenoBarba.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhb4);
-                        AgendaEventoEmpleado ehb4 = new AgendaEventoEmpleado();
-                        ehb4.setAgendaEvento(hb4); ehb4.setEmpleado(carlos); ehb4.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehb4);
-
-                        log.info("    Cobros de HOY BARBERÍA creados (4 citas FINALIZADAS)");
+            for (Producto prod : productos) {
+                for (Sucursal suc : sucursales) {
+                    if (prod.getEmpresa() != null && suc.getEmpresa() != null &&
+                        prod.getEmpresa().getId().equals(suc.getEmpresa().getId())) {
+                        InventarioSucursal inv = new InventarioSucursal();
+                        inv.setProducto(prod);
+                        inv.setSucursal(suc);
+                        inv.setStockActual(15);
+                        inv.setStockMinimo(2);
+                        inv.setActivo(true);
+                        inventarioSucursalRepository.save(inv);
                     }
-                });
-
-        // --- SALÓN: cobros de hoy ---
-        empresaRepository.findAll().stream()
-                .filter(e -> e.getNit().equals("1000000002"))
-                .findFirst()
-                .ifPresent(salon -> {
-                    long countHoy = agendaEventoRepository.findBySucursal_Empresa(salon).stream()
-                            .filter(ev -> ev.getEstado() == EstadoEvento.FINALIZADO
-                                    && ev.getInicio() != null
-                                    && ev.getInicio().toLocalDate().equals(java.time.LocalDate.now()))
-                            .count();
-
-                    if (countHoy == 0) {
-                        Sucursal sucSalon   = sucursalRepository.findByEmpresa(salon).get(0);
-                        Usuario recepSalon  = usuarioRepository.findByEmail("recep@klipp-salon.com").orElseThrow();
-                        Cliente maria       = clienteRepository.findByEmailAndEmpresa("maria@gmail.com", salon).orElseThrow();
-                        Cliente valen       = clienteRepository.findByEmailAndEmpresa("valen@gmail.com", salon).orElseThrow();
-                        Empleado laura      = empleadoRepository.findByUsuario_Email("laura@klipp-salon.com").orElseThrow();
-                        Empleado sofia      = empleadoRepository.findByUsuario_Email("sofia@klipp-salon.com").orElseThrow();
-                        Servicio colorimetria = servicioRepository.findByEmpresaAndNombre(salon, "Colorimetría completa").orElseThrow();
-                        Servicio manicure    = servicioRepository.findByEmpresaAndNombre(salon, "Manicure clásico").orElseThrow();
-                        Servicio pedicure    = servicioRepository.findByEmpresaAndNombre(salon, "Pedicure completo").orElseThrow();
-                        Servicio unasAcril   = servicioRepository.findByEmpresaAndNombre(salon, "Uñas acrílicas").orElseThrow();
-
-                        // Cobro 5 — María, colorimetría con Laura, 09:00
-                        AgendaEvento hs1 = new AgendaEvento();
-                        hs1.setCliente(maria); hs1.setSucursal(sucSalon); hs1.setCreadoPorUsuario(recepSalon);
-                        hs1.setTipoEvento(TipoEvento.CITA); hs1.setEstado(EstadoEvento.FINALIZADO);
-                        hs1.setInicio(OffsetDateTime.now().withHour(9).withMinute(0).withSecond(0).withNano(0));
-                        hs1.setFin(OffsetDateTime.now().withHour(11).withMinute(0).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hs1);
-                        AgendaEventoDetalle dhs1 = new AgendaEventoDetalle();
-                        dhs1.setAgendaEvento(hs1); dhs1.setServicio(colorimetria);
-                        dhs1.setDuracionEstimadaMinutos(colorimetria.getDuracionMinutos());
-                        dhs1.setPrecioAcordado(colorimetria.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhs1);
-                        AgendaEventoEmpleado ehs1 = new AgendaEventoEmpleado();
-                        ehs1.setAgendaEvento(hs1); ehs1.setEmpleado(laura); ehs1.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehs1);
-
-                        // Cobro 6 — Valentina, manicure + pedicure con Sofía, 11:30
-                        AgendaEvento hs2 = new AgendaEvento();
-                        hs2.setCliente(valen); hs2.setSucursal(sucSalon); hs2.setCreadoPorUsuario(recepSalon);
-                        hs2.setTipoEvento(TipoEvento.CITA); hs2.setEstado(EstadoEvento.FINALIZADO);
-                        hs2.setInicio(OffsetDateTime.now().withHour(11).withMinute(30).withSecond(0).withNano(0));
-                        hs2.setFin(OffsetDateTime.now().withHour(13).withMinute(0).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hs2);
-                        AgendaEventoDetalle dhs2a = new AgendaEventoDetalle();
-                        dhs2a.setAgendaEvento(hs2); dhs2a.setServicio(manicure);
-                        dhs2a.setDuracionEstimadaMinutos(manicure.getDuracionMinutos());
-                        dhs2a.setPrecioAcordado(manicure.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhs2a);
-                        AgendaEventoDetalle dhs2b = new AgendaEventoDetalle();
-                        dhs2b.setAgendaEvento(hs2); dhs2b.setServicio(pedicure);
-                        dhs2b.setDuracionEstimadaMinutos(pedicure.getDuracionMinutos());
-                        dhs2b.setPrecioAcordado(pedicure.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhs2b);
-                        AgendaEventoEmpleado ehs2 = new AgendaEventoEmpleado();
-                        ehs2.setAgendaEvento(hs2); ehs2.setEmpleado(sofia); ehs2.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehs2);
-
-                        // Cobro 7 — María, uñas acrílicas con Sofía, 14:00
-                        AgendaEvento hs3 = new AgendaEvento();
-                        hs3.setCliente(maria); hs3.setSucursal(sucSalon); hs3.setCreadoPorUsuario(recepSalon);
-                        hs3.setTipoEvento(TipoEvento.CITA); hs3.setEstado(EstadoEvento.FINALIZADO);
-                        hs3.setInicio(OffsetDateTime.now().withHour(14).withMinute(0).withSecond(0).withNano(0));
-                        hs3.setFin(OffsetDateTime.now().withHour(15).withMinute(30).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hs3);
-                        AgendaEventoDetalle dhs3 = new AgendaEventoDetalle();
-                        dhs3.setAgendaEvento(hs3); dhs3.setServicio(unasAcril);
-                        dhs3.setDuracionEstimadaMinutos(unasAcril.getDuracionMinutos());
-                        dhs3.setPrecioAcordado(unasAcril.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhs3);
-                        AgendaEventoEmpleado ehs3 = new AgendaEventoEmpleado();
-                        ehs3.setAgendaEvento(hs3); ehs3.setEmpleado(sofia); ehs3.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehs3);
-
-                        log.info("    Cobros de HOY SALÓN creados (3 citas FINALIZADAS)");
-                    }
-                });
-
-        // --- VETERINARIA: cobros de hoy ---
-        empresaRepository.findAll().stream()
-                .filter(e -> e.getNit().equals("1000000003"))
-                .findFirst()
-                .ifPresent(vet -> {
-                    long countHoy = agendaEventoRepository.findBySucursal_Empresa(vet).stream()
-                            .filter(ev -> ev.getEstado() == EstadoEvento.FINALIZADO
-                                    && ev.getInicio() != null
-                                    && ev.getInicio().toLocalDate().equals(java.time.LocalDate.now()))
-                            .count();
-
-                    if (countHoy == 0) {
-                        Sucursal sucVet  = sucursalRepository.findByEmpresa(vet).get(0);
-                        Usuario recepVet = usuarioRepository.findByEmail("recep@klipp-vet.com").orElseThrow();
-                        Cliente roberto  = clienteRepository.findByEmailAndEmpresa("roberto@gmail.com", vet).orElseThrow();
-                        Empleado dra     = empleadoRepository.findByUsuario_Email("ana@klipp-vet.com").orElseThrow();
-                        Mascota max      = mascotaRepository.findByClienteAndNombre(roberto, "Max").orElseThrow();
-                        Mascota rocky    = mascotaRepository.findByClienteAndNombre(roberto, "Rocky").orElseThrow();
-                        Servicio banoHipo  = servicioRepository.findByEmpresaAndNombre(vet, "Baño hipoalergénico").orElseThrow();
-                        Servicio banoCorte = servicioRepository.findByEmpresaAndNombre(vet, "Baño + corte de pelo").orElseThrow();
-                        Servicio consulta  = servicioRepository.findByEmpresaAndNombre(vet, "Consulta veterinaria general").orElseThrow();
-                        Servicio cortUnas  = servicioRepository.findByEmpresaAndNombre(vet, "Corte de uñas").orElseThrow();
-
-                        // Cobro 8 — Max, consulta + baño hipoalérgénico con Dra. Ana, 08:00
-                        AgendaEvento hv1 = new AgendaEvento();
-                        hv1.setCliente(roberto); hv1.setMascota(max); hv1.setSucursal(sucVet); hv1.setCreadoPorUsuario(recepVet);
-                        hv1.setTipoEvento(TipoEvento.CITA); hv1.setEstado(EstadoEvento.FINALIZADO);
-                        hv1.setInicio(OffsetDateTime.now().withHour(8).withMinute(0).withSecond(0).withNano(0));
-                        hv1.setFin(OffsetDateTime.now().withHour(9).withMinute(40).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hv1);
-                        AgendaEventoDetalle dhv1a = new AgendaEventoDetalle();
-                        dhv1a.setAgendaEvento(hv1); dhv1a.setServicio(consulta);
-                        dhv1a.setDuracionEstimadaMinutos(consulta.getDuracionMinutos());
-                        dhv1a.setPrecioAcordado(consulta.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhv1a);
-                        AgendaEventoDetalle dhv1b = new AgendaEventoDetalle();
-                        dhv1b.setAgendaEvento(hv1); dhv1b.setServicio(banoHipo);
-                        dhv1b.setDuracionEstimadaMinutos(banoHipo.getDuracionMinutos());
-                        dhv1b.setPrecioAcordado(banoHipo.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhv1b);
-                        AgendaEventoEmpleado ehv1 = new AgendaEventoEmpleado();
-                        ehv1.setAgendaEvento(hv1); ehv1.setEmpleado(dra); ehv1.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehv1);
-
-                        // Cobro 9 — Rocky, baño + corte + corte de uñas con Dra. Ana, 10:00
-                        AgendaEvento hv2 = new AgendaEvento();
-                        hv2.setCliente(roberto); hv2.setMascota(rocky); hv2.setSucursal(sucVet); hv2.setCreadoPorUsuario(recepVet);
-                        hv2.setTipoEvento(TipoEvento.CITA); hv2.setEstado(EstadoEvento.FINALIZADO);
-                        hv2.setInicio(OffsetDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0));
-                        hv2.setFin(OffsetDateTime.now().withHour(11).withMinute(45).withSecond(0).withNano(0));
-                        agendaEventoRepository.save(hv2);
-                        AgendaEventoDetalle dhv2a = new AgendaEventoDetalle();
-                        dhv2a.setAgendaEvento(hv2); dhv2a.setServicio(banoCorte);
-                        dhv2a.setDuracionEstimadaMinutos(banoCorte.getDuracionMinutos());
-                        dhv2a.setPrecioAcordado(banoCorte.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhv2a);
-                        AgendaEventoDetalle dhv2b = new AgendaEventoDetalle();
-                        dhv2b.setAgendaEvento(hv2); dhv2b.setServicio(cortUnas);
-                        dhv2b.setDuracionEstimadaMinutos(cortUnas.getDuracionMinutos());
-                        dhv2b.setPrecioAcordado(cortUnas.getPrecioBase());
-                        agendaEventoDetalleRepository.save(dhv2b);
-                        AgendaEventoEmpleado ehv2 = new AgendaEventoEmpleado();
-                        ehv2.setAgendaEvento(hv2); ehv2.setEmpleado(dra); ehv2.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
-                        agendaEventoEmpleadoRepository.save(ehv2);
-
-                        log.info("    Cobros de HOY VETERINARIA creados (2 citas FINALIZADAS)");
-                    }
-                });
+                }
+            }
+            log.info("Inventario de prueba inicializado.");
+        }
     }
 
 }

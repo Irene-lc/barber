@@ -2,10 +2,12 @@ package edu.upb.barber.service;
 
 import edu.upb.barber.repository.ClienteRepository;
 import edu.upb.barber.repository.EmpresaRepository;
+import edu.upb.barber.repository.UsuarioRepository;
 import edu.upb.barber.repository.dto.request.ClienteRequestDto;
 import edu.upb.barber.repository.dto.response.ClienteResponseDto;
 import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Empresa;
+import edu.upb.barber.repository.entity.Usuario;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ public class ClienteService {
 
     private final ClienteRepository clienteRepository;
     private final EmpresaRepository empresaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final LogService logService;
 
     @Transactional(readOnly = true)
@@ -73,9 +76,19 @@ public class ClienteService {
         cliente.setEmpresa(empresa);
         cliente.setActivo(dto.isActivo());
 
-        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof edu.upb.barber.repository.entity.Usuario) {
-            cliente.setUsuario((edu.upb.barber.repository.entity.Usuario) authentication.getPrincipal());
+        if (dto.getUsuarioId() != null && !dto.getUsuarioId().isBlank()) {
+            Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
+                    .orElseThrow(() -> new OperationException("Usuario no encontrado con id: " + dto.getUsuarioId()));
+            cliente.setUsuario(usuario);
+        } else {
+            // Auto-associate current authenticated user if role is ROLE_CLIENTE
+            if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
+                Usuario currentUser = (Usuario) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                if (currentUser.getRol() == edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE) {
+                    cliente.setUsuario(currentUser);
+                }
+            }
         }
 
         logService.info("Cliente guardado exitosamente: " + dto.getNombre());
@@ -104,6 +117,12 @@ public class ClienteService {
             Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
                     .orElseThrow(() -> new OperationException("Empresa no encontrada con id: " + dto.getEmpresaId()));
             cliente.setEmpresa(empresa);
+        }
+
+        if (dto.getUsuarioId() != null && !dto.getUsuarioId().isBlank()) {
+            Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
+                    .orElseThrow(() -> new OperationException("Usuario no encontrado con id: " + dto.getUsuarioId()));
+            cliente.setUsuario(usuario);
         }
 
         logService.info("Cliente actualizado exitosamente: " + clienteId);

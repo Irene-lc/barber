@@ -14,6 +14,9 @@ public class VentaRequestDto {
     @JsonProperty("cliente_id")
     private String clienteId;
 
+    @JsonProperty("agenda_evento_id")
+    private String agendaEventoId;
+
     private BigDecimal subtotal;
     private BigDecimal descuento;
     private BigDecimal total;
