@@ -71,6 +71,8 @@ public class UsuarioService {
 
         usuario.setNombre(usuarioRequestDto.getNombre());
         usuario.setApellido(usuarioRequestDto.getApellido());
+        usuario.setTelefono(usuarioRequestDto.getTelefono());
+        usuario.setDocumento(usuarioRequestDto.getDocumento());
         usuario.setEmail(usuarioRequestDto.getEmail());
 
         usuario.setPasswordHash(passwordEncoder.encode(usuarioRequestDto.getPassword()));
@@ -141,6 +143,8 @@ public class UsuarioService {
 
         usuario.setNombre(usuarioRequestDto.getNombre());
         usuario.setApellido(usuarioRequestDto.getApellido());
+        usuario.setTelefono(usuarioRequestDto.getTelefono());
+        usuario.setDocumento(usuarioRequestDto.getDocumento());
         if (!StringUtil.isNullOrEmpty(usuarioRequestDto.getPassword())) {
             usuario.setPasswordHash(passwordEncoder.encode(usuarioRequestDto.getPassword()));
         }

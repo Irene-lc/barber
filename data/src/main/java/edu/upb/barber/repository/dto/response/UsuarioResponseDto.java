@@ -12,6 +12,8 @@ public class UsuarioResponseDto {
     private String id;
     private String nombre;
     private String apellido;
+    private String telefono;
+    private String documento;
     private String email;
     private RolUsuario rol;
     private boolean activo;
@@ -20,6 +22,8 @@ public class UsuarioResponseDto {
         this.id = usuario.getId();
         this.nombre = usuario.getNombre();
         this.apellido = usuario.getApellido();
+        this.telefono = usuario.getTelefono();
+        this.documento = usuario.getDocumento();
         this.email = usuario.getEmail();
         this.rol = usuario.getRol();
         this.activo = usuario.isActivo();

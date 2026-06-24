@@ -18,6 +18,10 @@ public class UsuarioRequestDto {
 
     private String apellido;
 
+    private String telefono;
+
+    private String documento;
+
     private String email;
 
     private String password;
