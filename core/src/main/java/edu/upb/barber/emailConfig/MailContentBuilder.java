@@ -77,4 +77,22 @@ public class MailContentBuilder {
         ctx.setVariable("imageLinkedin", "imageLinkedin");
         return this.templateEngine.process("mailResetPassword", ctx);
     }
+
+    public String sendConfirmation(String clienteNombre, String servicioNombre, String empleadoNombre, String citaFecha, String citaHora, String sucursalNombre, String precioTotal) {
+        final Context ctx = new Context();
+        ctx.setVariable("imageResourceName", "banner");
+        ctx.setVariable("imageX", "imageX");
+        ctx.setVariable("imageLinkedin", "imageLinkedin");
+
+        ctx.setVariable("clienteNombre", clienteNombre);
+        ctx.setVariable("servicioNombre", servicioNombre);
+        ctx.setVariable("empleadoNombre", empleadoNombre);
+        ctx.setVariable("citaFecha", citaFecha);
+        ctx.setVariable("citaHora", citaHora);
+        ctx.setVariable("sucursalNombre", sucursalNombre);
+        ctx.setVariable("precioTotal", precioTotal);
+        ctx.setVariable("urlCitas", "https://www.upbvirtual.net/upbvirtual/login/index.php");
+
+        return this.templateEngine.process("citaConfirmada", ctx);
+    }
 }

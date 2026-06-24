@@ -55,7 +55,30 @@ public class VentaService {
                     .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + request.getAgendaEventoId()));
         }
 
-        Venta venta = new Venta();
+        Venta venta;
+        boolean isExisting = false;
+
+        if (request.getAgendaEventoId() != null && !request.getAgendaEventoId().isBlank()) {
+            Optional<Venta> existingVentaOpt = ventaRepository.findByAgendaEventoId(request.getAgendaEventoId());
+            if (existingVentaOpt.isPresent()) {
+                venta = existingVentaOpt.get();
+                if (venta.getEstado() == EstadoVenta.COBRADA) {
+                    log.error("Error al crear venta. La cita con ID: {} ya fue cobrada.", request.getAgendaEventoId());
+                    throw new OperationException("Esta cita ya fue cobrada.");
+                }
+                isExisting = true;
+            } else {
+                venta = new Venta();
+            }
+        } else {
+            venta = new Venta();
+        }
+
+        if (isExisting) {
+            List<VentaDetalle> oldDetails = ventaDetalleRepository.findByVentaId(venta.getId());
+            ventaDetalleRepository.deleteAll(oldDetails);
+        }
+
         venta.setSucursal(sucursal);
         venta.setCliente(cliente);
         venta.setAgendaEvento(agendaEvento);
@@ -63,7 +86,10 @@ public class VentaService {
         venta.setDescuento(request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO);
         venta.setTotal(request.getTotal() != null ? request.getTotal() : BigDecimal.ZERO);
         venta.setNotas(request.getNotas());
-        venta.setEstado(EstadoVenta.ABIERTA);
+        
+        if (!isExisting) {
+            venta.setEstado(EstadoVenta.ABIERTA);
+        }
 
         venta = ventaRepository.save(venta);
 

@@ -100,4 +100,26 @@ public class EmailService {
         };
         javaMailSender.send(messagePreparator);
     }
+
+    @Async("taskLog")
+    public void sendConfirmationEmail(String to, String clienteNombre, String servicioNombre, String empleadoNombre, String citaFecha, String citaHora, String sucursalNombre, String precioTotal) {
+        log.info("Enviando email de confirmación de cita a: " + to);
+        MimeMessagePreparator messagePreparator = mimeMessage -> {
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            messageHelper.setTo(to);
+            messageHelper.setFrom(new InternetAddress(mailFrom));
+            messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
+            messageHelper.setSubject("Cita Confirmada");
+            String message = mailContentBuilder.sendConfirmation(
+                clienteNombre, servicioNombre, empleadoNombre, citaFecha, citaHora, sucursalNombre, precioTotal
+            );
+
+            messageHelper.setText(message, true);
+            messageHelper.addInline("banner", new ClassPathResource(BANNER_PNG));
+            messageHelper.addInline("imageLinkedin", new ClassPathResource(LINKEDIN_PNG));
+            messageHelper.addInline("imageX", new ClassPathResource(X_PNG));
+        };
+        javaMailSender.send(messagePreparator);
+        log.info("Email de confirmación de cita enviado a: " + to);
+    }
 }
