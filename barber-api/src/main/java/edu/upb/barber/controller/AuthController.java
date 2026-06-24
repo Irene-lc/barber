@@ -76,41 +76,38 @@ public class AuthController {
             if (data.empresaId() != null && !data.empresaId().isBlank()) {
                 empresa = empresaRepository.findById(data.empresaId()).orElse(null);
             }
-            if (empresa == null) {
-                List<Empresa> empresas = empresaRepository.findAll();
-                if (!empresas.isEmpty()) {
-                    empresa = empresas.get(0);
-                }
-            }
-            if (empresa == null) {
-                return ResponseEntity.badRequest().body(Map.of("message", "No se encontró ninguna empresa en el sistema para asociar al cliente."));
-            }
 
             // Crear Usuario
             Usuario usuario = Usuario.builder()
                     .nombre(data.nombre() != null ? data.nombre().trim() : data.email().split("@")[0])
-                    .apellido("")
+                    .apellido(data.apellido() != null ? data.apellido().trim() : "")
                     .email(data.email().trim())
                     .passwordHash(passwordEncoder.encode(data.password()))
                     .rol(RolUsuario.ROLE_CLIENTE)
                     .empresa(empresa)
+                    .telefono(data.telefono())
+                    .documento(data.documento())
                     .activo(true)
                     .build();
 
             usuario = usuarioRepository.save(usuario);
 
-            // Crear Cliente
-            Cliente cliente = new Cliente();
-            cliente.setNombre(data.nombre() != null ? data.nombre().trim() : "");
-            cliente.setEmail(data.email().trim());
-            cliente.setTelefono(data.telefono());
-            cliente.setDocumento(data.documento());
-            cliente.setNotas(data.notas());
-            cliente.setUsuario(usuario);
-            cliente.setEmpresa(empresa);
-            cliente.setActivo(true);
+            // Crear Cliente únicamente si hay una empresa asociada
+            if (empresa != null) {
+                Cliente cliente = new Cliente();
+                String nombreCompleto = (data.nombre() != null ? data.nombre().trim() : "") +
+                        (data.apellido() != null && !data.apellido().isBlank() ? " " + data.apellido().trim() : "");
+                cliente.setNombre(nombreCompleto.trim());
+                cliente.setEmail(data.email().trim());
+                cliente.setTelefono(data.telefono());
+                cliente.setDocumento(data.documento());
+                cliente.setNotas(data.notas());
+                cliente.setUsuario(usuario);
+                cliente.setEmpresa(empresa);
+                cliente.setActivo(true);
 
-            clienteRepository.save(cliente);
+                clienteRepository.save(cliente);
+            }
 
             log.info("Registro exitoso para el email: {}", data.email());
             return ResponseEntity.ok(Map.of("message", "Cliente registrado exitosamente."));

@@ -34,6 +34,7 @@ public class VentaService {
     private final ComboServicioRepository comboServicioRepository;
     private final EmpleadoRepository empleadoRepository;
     private final InventarioSucursalRepository inventarioSucursalRepository;
+    private final AgendaEventoRepository agendaEventoRepository;
     private final LogService logService;
 
     @Transactional
@@ -48,9 +49,16 @@ public class VentaService {
                     .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
 
+        AgendaEvento agendaEvento = null;
+        if (request.getAgendaEventoId() != null && !request.getAgendaEventoId().isBlank()) {
+            agendaEvento = agendaEventoRepository.findById(request.getAgendaEventoId())
+                    .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + request.getAgendaEventoId()));
+        }
+
         Venta venta = new Venta();
         venta.setSucursal(sucursal);
         venta.setCliente(cliente);
+        venta.setAgendaEvento(agendaEvento);
         venta.setSubtotal(request.getSubtotal() != null ? request.getSubtotal() : BigDecimal.ZERO);
         venta.setDescuento(request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO);
         venta.setTotal(request.getTotal() != null ? request.getTotal() : BigDecimal.ZERO);
@@ -63,6 +71,8 @@ public class VentaService {
 
         if (request.getDetalles() != null) {
             for (VentaDetalleRequestDto detDto : request.getDetalles()) {
+                validarDetalle(detDto);
+
                 VentaDetalle detalle = new VentaDetalle();
                 detalle.setVenta(venta);
                 detalle.setTipoItem(detDto.getTipoItem());
@@ -93,12 +103,14 @@ public class VentaService {
                             .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
                     detalle.setProducto(producto);
 
-                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                            .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
-                    if (invOpt.isPresent()) {
-                        InventarioSucursal inv = invOpt.get();
-                        inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
-                        inventarioSucursalRepository.save(inv);
+                    if (venta.getEstado() == EstadoVenta.COBRADA) {
+                        Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
+                                .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
+                        if (invOpt.isPresent()) {
+                            InventarioSucursal inv = invOpt.get();
+                            inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
+                            inventarioSucursalRepository.save(inv);
+                        }
                     }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
                     ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
@@ -124,7 +136,29 @@ public class VentaService {
 
     @Transactional(readOnly = true)
     public List<VentaResponseDto> listar() {
-        return ventaRepository.findAll().stream()
+        edu.upb.barber.repository.entity.Usuario currentUser = null;
+        if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof edu.upb.barber.repository.entity.Usuario) {
+            currentUser = (edu.upb.barber.repository.entity.Usuario) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+
+        List<Venta> ventas;
+        if (currentUser != null && currentUser.getRol() == edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE) {
+            List<String> clienteIds = clienteRepository.findByUsuarioId(currentUser.getId()).stream()
+                    .map(Cliente::getId)
+                    .toList();
+            if (clienteIds.isEmpty()) {
+                ventas = List.of();
+            } else {
+                ventas = ventaRepository.findByClienteIdIn(clienteIds);
+            }
+        } else if (currentUser != null && currentUser.getEmpresa() != null) {
+            ventas = ventaRepository.findBySucursal_Empresa(currentUser.getEmpresa());
+        } else {
+            ventas = ventaRepository.findAll();
+        }
+
+        return ventas.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -158,15 +192,25 @@ public class VentaService {
                     .orElseThrow(() -> new OperationException("Cliente no encontrado con ID: " + request.getClienteId()));
         }
 
+        AgendaEvento agendaEvento = null;
+        if (request.getAgendaEventoId() != null && !request.getAgendaEventoId().isBlank()) {
+            agendaEvento = agendaEventoRepository.findById(request.getAgendaEventoId())
+                    .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + request.getAgendaEventoId()));
+        } else {
+            agendaEvento = venta.getAgendaEvento();
+        }
+
         List<VentaDetalle> detallesAnteriores = ventaDetalleRepository.findByVentaId(id);
-        for (VentaDetalle det : detallesAnteriores) {
-            if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
-                Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                        .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
-                if (invOpt.isPresent()) {
-                    InventarioSucursal inv = invOpt.get();
-                    inv.setStockActual(inv.getStockActual() + det.getCantidad());
-                    inventarioSucursalRepository.save(inv);
+        if (venta.getEstado() == EstadoVenta.COBRADA) {
+            for (VentaDetalle det : detallesAnteriores) {
+                if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
+                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
+                            .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
+                    if (invOpt.isPresent()) {
+                        InventarioSucursal inv = invOpt.get();
+                        inv.setStockActual(inv.getStockActual() + det.getCantidad());
+                        inventarioSucursalRepository.save(inv);
+                    }
                 }
             }
         }
@@ -174,6 +218,7 @@ public class VentaService {
 
         venta.setSucursal(sucursal);
         venta.setCliente(cliente);
+        venta.setAgendaEvento(agendaEvento);
         venta.setSubtotal(request.getSubtotal() != null ? request.getSubtotal() : BigDecimal.ZERO);
         venta.setDescuento(request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO);
         venta.setTotal(request.getTotal() != null ? request.getTotal() : BigDecimal.ZERO);
@@ -185,6 +230,8 @@ public class VentaService {
 
         if (request.getDetalles() != null) {
             for (VentaDetalleRequestDto detDto : request.getDetalles()) {
+                validarDetalle(detDto);
+
                 VentaDetalle detalle = new VentaDetalle();
                 detalle.setVenta(venta);
                 detalle.setTipoItem(detDto.getTipoItem());
@@ -215,12 +262,14 @@ public class VentaService {
                             .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
                     detalle.setProducto(producto);
 
-                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                            .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
-                    if (invOpt.isPresent()) {
-                        InventarioSucursal inv = invOpt.get();
-                        inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
-                        inventarioSucursalRepository.save(inv);
+                    if (venta.getEstado() == EstadoVenta.COBRADA) {
+                        Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
+                                .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
+                        if (invOpt.isPresent()) {
+                            InventarioSucursal inv = invOpt.get();
+                            inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
+                            inventarioSucursalRepository.save(inv);
+                        }
                     }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
                     ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
@@ -250,6 +299,48 @@ public class VentaService {
                 .orElseThrow(() -> new OperationException("Venta no encontrada con ID: " + id));
 
         List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(id);
+        if (venta.getEstado() == EstadoVenta.COBRADA) {
+            for (VentaDetalle det : detalles) {
+                if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
+                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
+                            .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
+                    if (invOpt.isPresent()) {
+                        InventarioSucursal inv = invOpt.get();
+                        inv.setStockActual(inv.getStockActual() + det.getCantidad());
+                        inventarioSucursalRepository.save(inv);
+                    }
+                }
+            }
+        }
+
+        ventaDetalleRepository.deleteAll(detalles);
+        ventaRepository.delete(venta);
+        logService.info("Venta eliminada exitosamente: " + id);
+    }
+
+    @Transactional
+    public void descontarStockVenta(Venta venta) {
+        if (venta == null) return;
+        List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(venta.getId());
+        for (VentaDetalle det : detalles) {
+            if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
+                Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
+                        .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
+                if (invOpt.isPresent()) {
+                    InventarioSucursal inv = invOpt.get();
+                    inv.setStockActual(Math.max(0, inv.getStockActual() - det.getCantidad()));
+                    inventarioSucursalRepository.save(inv);
+                    log.info("Stock descontado para producto: {}, sucursal: {}, cantidad: {}",
+                            det.getProducto().getId(), venta.getSucursal().getId(), det.getCantidad());
+                }
+            }
+        }
+    }
+
+    @Transactional
+    public void restaurarStockVenta(Venta venta) {
+        if (venta == null) return;
+        List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(venta.getId());
         for (VentaDetalle det : detalles) {
             if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
                 Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
@@ -258,12 +349,22 @@ public class VentaService {
                     InventarioSucursal inv = invOpt.get();
                     inv.setStockActual(inv.getStockActual() + det.getCantidad());
                     inventarioSucursalRepository.save(inv);
+                    log.info("Stock restaurado para producto: {}, sucursal: {}, cantidad: {}",
+                            det.getProducto().getId(), venta.getSucursal().getId(), det.getCantidad());
                 }
             }
         }
+    }
 
-        ventaDetalleRepository.deleteAll(detalles);
-        ventaRepository.delete(venta);
-        logService.info("Venta eliminada exitosamente: " + id);
+    private void validarDetalle(VentaDetalleRequestDto detDto) throws OperationException {
+        if (detDto == null) {
+            throw new OperationException("El detalle de venta no puede ser null");
+        }
+        if (detDto.getCantidad() <= 0) {
+            throw new OperationException("La cantidad debe ser mayor que cero");
+        }
+        if (detDto.getPrecioUnitario() == null || detDto.getPrecioUnitario().compareTo(BigDecimal.ZERO) < 0) {
+            throw new OperationException("El precio unitario debe ser mayor o igual a cero");
+        }
     }
 }

@@ -15,6 +15,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.List;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -40,9 +42,11 @@ public class DataInitializer implements CommandLineRunner {
     private final AgendaEventoDetalleRepository   agendaEventoDetalleRepository;
     private final AgendaEventoEmpleadoRepository  agendaEventoEmpleadoRepository;
     private final EmpleadoSucursalRepository      empleadoSucursalRepository;
+    private final InventarioSucursalRepository    inventarioSucursalRepository;
 
     private final EmailService emailService;
     private final JobService jobService;
+    private final JdbcTemplate jdbcTemplate;
 
 
     @Override
@@ -57,6 +61,25 @@ public class DataInitializer implements CommandLineRunner {
 
     @Transactional
     public void init() {
+        // Drop unique constraint on usuario_id in table cliente if exists to support multiple tenants per user
+        try {
+            jdbcTemplate.execute("ALTER TABLE cliente DROP CONSTRAINT IF EXISTS ukid7jmosqg8hkqiqw4vf50xipm");
+            List<String> constraints = jdbcTemplate.queryForList(
+                "SELECT conname FROM pg_constraint c " +
+                "JOIN pg_class t ON c.conrelid = t.oid " +
+                "JOIN pg_namespace n ON t.relnamespace = n.oid " +
+                "WHERE t.relname = 'cliente' AND c.contype = 'u' " +
+                "AND ARRAY(SELECT attname FROM pg_attribute WHERE attrelid = t.oid AND attnum = ANY(c.conkey)) = ARRAY['usuario_id']",
+                String.class
+            );
+            for (String constraintName : constraints) {
+                jdbcTemplate.execute("ALTER TABLE cliente DROP CONSTRAINT IF EXISTS " + constraintName);
+                log.info("Unique constraint dropped: " + constraintName);
+            }
+        } catch (Exception e) {
+            log.warn("Could not drop unique constraint on usuario_id in cliente table: " + e.getMessage());
+        }
+
         String password = "Abc123**";
         log.info("DataInitializer: verificando datos de prueba...");
 
@@ -333,7 +356,7 @@ public class DataInitializer implements CommandLineRunner {
                 .noneMatch(e -> e.getNit().equals("1000000003"))) {
 
             Empresa vet = new Empresa();
-            vet.setNombre("Klipp Pet Grooming");
+            vet.setNombre("Klipp Estética de Mascotas");
             vet.setRazonSocial("Klipp Veterinaria SRL");
             vet.setNit("1000000003");
             vet.setTelefono("70300001");
@@ -390,7 +413,7 @@ public class DataInitializer implements CommandLineRunner {
             eDra.setNombre("Dra. Ana Suárez");
             eDra.setTelefono("70300010");
             eDra.setCargo(CargoEmpleado.OTRO);
-            eDra.setEspecialidad("Veterinaria general · Grooming canino");
+            eDra.setEspecialidad("Veterinaria general · Estética canina");
             eDra.setFotoUrl("AS");
             eDra.setDisponible(true);
             eDra.setActivo(true);
@@ -1244,9 +1267,30 @@ public class DataInitializer implements CommandLineRunner {
                         emp10.setRolEnEvento(RolEmpleadoEvento.RESPONSABLE);
                         agendaEventoEmpleadoRepository.save(emp10);
 
-                        log.info("Citas VETERINARIA 'Klipp Pet Grooming' creadas");
                     }
                 });
+
+        if (inventarioSucursalRepository.count() == 0) {
+            log.info("Inicializando inventario de prueba para sucursales...");
+            List<Producto> productos = productoRepository.findAll();
+            List<Sucursal> sucursales = sucursalRepository.findAll();
+
+            for (Producto prod : productos) {
+                for (Sucursal suc : sucursales) {
+                    if (prod.getEmpresa() != null && suc.getEmpresa() != null &&
+                        prod.getEmpresa().getId().equals(suc.getEmpresa().getId())) {
+                        InventarioSucursal inv = new InventarioSucursal();
+                        inv.setProducto(prod);
+                        inv.setSucursal(suc);
+                        inv.setStockActual(15);
+                        inv.setStockMinimo(2);
+                        inv.setActivo(true);
+                        inventarioSucursalRepository.save(inv);
+                    }
+                }
+            }
+            log.info("Inventario de prueba inicializado.");
+        }
     }
 
 }

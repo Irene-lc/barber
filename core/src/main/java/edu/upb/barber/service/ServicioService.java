@@ -39,7 +39,7 @@ public class ServicioService {
             currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         }
 
-        String empresaId = (currentUser != null && currentUser.getEmpresa() != null)
+        String empresaId = (currentUser != null && currentUser.getEmpresa() != null && currentUser.getRol() != edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE)
                 ? currentUser.getEmpresa().getId()
                 : null;
 

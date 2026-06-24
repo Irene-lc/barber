@@ -17,7 +17,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(
     name = "cliente",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uk_cliente_usuario", columnNames = "usuario_id")
+        @UniqueConstraint(name = "uk_cliente_usuario_empresa", columnNames = {"usuario_id", "empresa_id"})
     }
 )
 @Getter
@@ -33,7 +33,7 @@ public class Cliente extends AuditableEntity {
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 

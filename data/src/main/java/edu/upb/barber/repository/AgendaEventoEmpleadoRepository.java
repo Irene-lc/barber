@@ -43,6 +43,8 @@ public interface AgendaEventoEmpleadoRepository extends JpaRepository<AgendaEven
             @Param("estadosIgnorados") Collection<?> estadosIgnorados
     );
 
+    List<AgendaEventoEmpleado> findByEmpleadoId(String empleadoId);
+
     void deleteByAgendaEventoId(String agendaEventoId);
 
     List<AgendaEventoEmpleado> findByAgendaEventoId(String agendaEventoId);

@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface AgendaEventoRepository extends JpaRepository<AgendaEvento, String> {
     List<AgendaEvento> findBySucursal_Empresa(Empresa empresa);
+    List<AgendaEvento> findByClienteIdIn(List<String> clienteIds);
 }
