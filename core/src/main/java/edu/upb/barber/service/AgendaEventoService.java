@@ -49,6 +49,7 @@ public class AgendaEventoService {
     private final PagoService pagoService;
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
+    private final EmailService emailService;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -474,10 +475,67 @@ public class AgendaEventoService {
     public AgendaEventoResponseDto actualizarEstado(String id, EstadoEvento nuevoEstado) throws Exception {
         AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
                 .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + id));
+        
+        EstadoEvento estadoAnterior = agendaEvento.getEstado();
         agendaEvento.setEstado(nuevoEstado);
         agendaEvento = agendaEventoRepository.save(agendaEvento);
         logService.info("Estado de AgendaEvento actualizado a " + nuevoEstado + " para id: " + id);
+        
+        if (nuevoEstado == EstadoEvento.CONFIRMADO && estadoAnterior != EstadoEvento.CONFIRMADO) {
+            enviarEmailConfirmacion(agendaEvento);
+        }
+        
         return new AgendaEventoResponseDto(agendaEvento);
+    }
+
+    private void enviarEmailConfirmacion(AgendaEvento agendaEvento) {
+        try {
+            if (agendaEvento.getCliente() != null && agendaEvento.getCliente().getEmail() != null && !agendaEvento.getCliente().getEmail().isBlank()) {
+                List<AgendaEventoDetalle> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(agendaEvento.getId());
+                List<AgendaEventoEmpleado> empleados = agendaEventoEmpleadoRepository.findByAgendaEventoId(agendaEvento.getId());
+
+                String clienteNombre = agendaEvento.getCliente().getNombre();
+                
+                String servicioNombre = detalles.stream()
+                        .map(d -> d.getServicio() != null ? d.getServicio().getNombre() : (d.getComboServicio() != null ? d.getComboServicio().getNombre() : (d.getProducto() != null ? d.getProducto().getNombre() : "")))
+                        .filter(name -> name != null && !name.isBlank())
+                        .collect(Collectors.joining(", "));
+
+                String empleadoNombre = empleados.stream()
+                        .map(e -> e.getEmpleado() != null ? e.getEmpleado().getNombre() : "")
+                        .filter(name -> name != null && !name.isBlank())
+                        .collect(Collectors.joining(", "));
+
+                String citaFecha = "";
+                String citaHora = "";
+                if (agendaEvento.getInicio() != null) {
+                    java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("EEEE dd 'de' MMMM 'de' yyyy", new Locale("es", "ES"));
+                    java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+                    citaFecha = agendaEvento.getInicio().format(dateFormatter);
+                    citaHora = agendaEvento.getInicio().format(timeFormatter);
+                }
+
+                String sucursalNombre = agendaEvento.getSucursal() != null ? agendaEvento.getSucursal().getNombre() : "";
+
+                BigDecimal total = detalles.stream()
+                        .map(d -> d.getPrecioAcordado() != null ? d.getPrecioAcordado() : BigDecimal.ZERO)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                String precioTotal = total.toString() + " Bs.";
+
+                emailService.sendConfirmationEmail(
+                        agendaEvento.getCliente().getEmail(),
+                        clienteNombre,
+                        servicioNombre,
+                        empleadoNombre,
+                        citaFecha,
+                        citaHora,
+                        sucursalNombre,
+                        precioTotal
+                );
+            }
+        } catch (Exception ex) {
+            log.error("Error al enviar email de confirmación de cita para id: {}", agendaEvento.getId(), ex);
+        }
     }
 
     private void validarAsignacionesParaUpdate(
