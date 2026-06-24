@@ -10,6 +10,9 @@ public class SucursalRequestDto {
     private String direccion;
     private String telefono;
 
+    @JsonProperty("imagen_url")
+    private String imagenUrl;
+
     @JsonProperty("empresa_id")
     private String empresaId;
 

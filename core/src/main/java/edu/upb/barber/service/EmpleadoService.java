@@ -132,7 +132,9 @@ public class EmpleadoService {
         empleado.setNombre(dto.getNombre());
         empleado.setTelefono(dto.getTelefono());
         empleado.setEspecialidad(dto.getEspecialidad());
-        empleado.setFotoUrl(dto.getFotoUrl());
+        if (dto.getFotoUrl() != null) {
+            empleado.setFotoUrl(dto.getFotoUrl().isBlank() ? null : dto.getFotoUrl());
+        }
         empleado.setEmpresa(empresa);
         if (usuario != null) {
             empleado.setUsuario(usuario);
@@ -179,7 +181,9 @@ public class EmpleadoService {
         empleado.setNombre(dto.getNombre());
         empleado.setTelefono(dto.getTelefono());
         empleado.setEspecialidad(dto.getEspecialidad());
-        empleado.setFotoUrl(dto.getFotoUrl());
+        if (dto.getFotoUrl() != null) {
+            empleado.setFotoUrl(dto.getFotoUrl().isBlank() ? null : dto.getFotoUrl());
+        }
 
         if (dto.getEmpresaId() != null && !dto.getEmpresaId().isBlank()) {
             Usuario currentUser = null;

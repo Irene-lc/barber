@@ -46,6 +46,9 @@ public class Servicio extends AuditableEntity {
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "destinatario", nullable = false, length = 20)
     private TipoDestinatarioServicio destinatario;
