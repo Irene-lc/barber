@@ -63,6 +63,8 @@ public class VentaService {
 
         if (request.getDetalles() != null) {
             for (VentaDetalleRequestDto detDto : request.getDetalles()) {
+                validarDetalle(detDto);
+
                 VentaDetalle detalle = new VentaDetalle();
                 detalle.setVenta(venta);
                 detalle.setTipoItem(detDto.getTipoItem());
@@ -185,6 +187,8 @@ public class VentaService {
 
         if (request.getDetalles() != null) {
             for (VentaDetalleRequestDto detDto : request.getDetalles()) {
+                validarDetalle(detDto);
+
                 VentaDetalle detalle = new VentaDetalle();
                 detalle.setVenta(venta);
                 detalle.setTipoItem(detDto.getTipoItem());
@@ -265,5 +269,17 @@ public class VentaService {
         ventaDetalleRepository.deleteAll(detalles);
         ventaRepository.delete(venta);
         logService.info("Venta eliminada exitosamente: " + id);
+    }
+
+    private void validarDetalle(VentaDetalleRequestDto detDto) throws OperationException {
+        if (detDto == null) {
+            throw new OperationException("El detalle de venta no puede ser null");
+        }
+        if (detDto.getCantidad() <= 0) {
+            throw new OperationException("La cantidad debe ser mayor que cero");
+        }
+        if (detDto.getPrecioUnitario() == null || detDto.getPrecioUnitario().compareTo(BigDecimal.ZERO) < 0) {
+            throw new OperationException("El precio unitario debe ser mayor o igual a cero");
+        }
     }
 }

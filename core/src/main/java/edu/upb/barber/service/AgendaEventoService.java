@@ -616,23 +616,49 @@ public class AgendaEventoService {
             totalVenta = totalVenta.add(detDto.getPrecioUnitario());
         }
 
-        // Agregar detalles de los productos vendidos (si los hay)
-        if (request.productoIds() != null) {
+        // Agregar detalles de los productos vendidos con cantidad (si los hay)
+        if (request.productos() != null) {
+            for (WalkInRequestDto.ProductoCantidadDto productoDto : request.productos()) {
+                if (productoDto == null || productoDto.productoId() == null || productoDto.productoId().isBlank()) {
+                    continue;
+                }
+                int cantidad = productoDto.cantidad() != null ? productoDto.cantidad() : 0;
+                if (cantidad <= 0) {
+                    continue;
+                }
+
+                Producto producto = productoRepository.findById(productoDto.productoId())
+                        .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + productoDto.productoId()));
+
+                BigDecimal precioUnitario = producto.getPrecioVenta() != null ? producto.getPrecioVenta() : BigDecimal.ZERO;
+                VentaDetalleRequestDto detDto = new VentaDetalleRequestDto();
+                detDto.setTipoItem(TipoItemVenta.PRODUCTO);
+                detDto.setProductoId(producto.getId());
+                detDto.setEmpleadoId(empleado.getId());
+                detDto.setCantidad(cantidad);
+                detDto.setPrecioUnitario(precioUnitario);
+                detDto.setDescuento(BigDecimal.ZERO);
+                detDto.setNotas("Producto vendido en Walk-in");
+                detallesVenta.add(detDto);
+                totalVenta = totalVenta.add(precioUnitario.multiply(BigDecimal.valueOf(cantidad)));
+            }
+        } else if (request.productoIds() != null) {
             for (String productoId : request.productoIds()) {
                 if (productoId == null || productoId.isBlank()) continue;
                 Producto producto = productoRepository.findById(productoId)
                         .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + productoId));
 
+                BigDecimal precioUnitario = producto.getPrecioVenta() != null ? producto.getPrecioVenta() : BigDecimal.ZERO;
                 VentaDetalleRequestDto detDto = new VentaDetalleRequestDto();
                 detDto.setTipoItem(TipoItemVenta.PRODUCTO);
                 detDto.setProductoId(producto.getId());
                 detDto.setEmpleadoId(empleado.getId());
                 detDto.setCantidad(1);
-                detDto.setPrecioUnitario(producto.getPrecioVenta() != null ? producto.getPrecioVenta() : BigDecimal.ZERO);
+                detDto.setPrecioUnitario(precioUnitario);
                 detDto.setDescuento(BigDecimal.ZERO);
                 detDto.setNotas("Producto vendido en Walk-in");
                 detallesVenta.add(detDto);
-                totalVenta = totalVenta.add(detDto.getPrecioUnitario());
+                totalVenta = totalVenta.add(precioUnitario);
             }
         }
 
