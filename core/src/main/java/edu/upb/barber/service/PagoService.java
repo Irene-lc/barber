@@ -23,8 +23,9 @@ import edu.upb.barber.integracion.stereum.StereumChargeRequestDto;
 import edu.upb.barber.integracion.stereum.StereumChargeResponseDto;
 import edu.upb.barber.integracion.stereum.StereumCustomerDto;
 import edu.upb.barber.integracion.stereum.StereumPayClient;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,9 +36,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Service
 public class PagoService {
+
+    @Value("${stereum.account-id}")
+    private String stereumAccountId;
 
     private final PagoRepository pagoRepository;
     private final VentaRepository ventaRepository;
@@ -72,7 +76,7 @@ public class PagoService {
         chargeRequest.setIdempotencyKey(UUID.randomUUID().toString());
         chargeRequest.setChargeReason("Cobro de barberia Venta: " + venta.getId());
         chargeRequest.setReservationValidityTime("15");
-        chargeRequest.setAccountId("0b34db42-c94f-4661-b259-1f48f8f01b16");
+        chargeRequest.setAccountId(stereumAccountId);
         chargeRequest.setCustomer(customerDto);
 
         log.info("Llamando a Stereum para generar QR por un monto de {}", chargeRequest.getAmount());

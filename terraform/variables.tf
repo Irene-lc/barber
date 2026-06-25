@@ -22,6 +22,10 @@ variable "stereum_secret_key" {
   sensitive = true
 }
 
+variable "stereum_account_id" {
+  description = "Account ID de Stereum Pay"
+}
+
 variable "mail_username" {
   sensitive = true
 }

@@ -126,6 +126,7 @@ resource "aws_ecs_task_definition" "backend" {
       { name = "BARBER_SECRET_KEY",          value = var.jwt_secret },
       { name = "STEREUM_API_KEY",            value = var.stereum_api_key },
       { name = "STEREUM_SECRET_KEY",         value = var.stereum_secret_key },
+      { name = "STEREUM_ACCOUNT_ID",         value = var.stereum_account_id },
       { name = "MAIL_SMTP_USERNAME",         value = var.mail_username },
       { name = "MAIL_SMTP_PASSWORD",         value = var.mail_password },
       { name = "AWS_ACCESS_KEY_ID",          value = var.aws_access_key_id },
