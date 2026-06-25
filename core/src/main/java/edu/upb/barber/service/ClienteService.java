@@ -8,6 +8,7 @@ import edu.upb.barber.repository.dto.response.ClienteResponseDto;
 import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Empresa;
 import edu.upb.barber.repository.entity.Usuario;
+import edu.upb.barber.repository.entity.enums.RolUsuario;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,16 @@ public class ClienteService {
 
     @Transactional(readOnly = true)
     public List<ClienteResponseDto> listar() {
-        return clienteRepository.findAll().stream()
+        Usuario currentUser = getCurrentUser();
+        List<Cliente> clientes;
+        if (currentUser != null && currentUser.getRol() == RolUsuario.ROLE_CLIENTE) {
+            clientes = clienteRepository.findByUsuarioId(currentUser.getId());
+        } else if (currentUser != null && currentUser.getEmpresa() != null) {
+            clientes = clienteRepository.findByEmpresaId(currentUser.getEmpresa().getId());
+        } else {
+            clientes = clienteRepository.findAll();
+        }
+        return clientes.stream()
                 .map(ClienteResponseDto::new)
                 .collect(Collectors.toList());
     }
@@ -53,6 +63,12 @@ public class ClienteService {
 
     @Transactional
     public ClienteResponseDto save(ClienteRequestDto dto) throws Exception {
+        dto.setNombre(ValidationUtils.requireText(dto.getNombre(), 160, "nombre"));
+        dto.setTelefono(ValidationUtils.cleanOptionalText(dto.getTelefono(), 30, "telefono"));
+        dto.setEmail(ValidationUtils.cleanOptionalText(dto.getEmail(), 120, "email"));
+        dto.setDocumento(ValidationUtils.cleanOptionalText(dto.getDocumento(), 40, "documento"));
+        dto.setNotas(ValidationUtils.cleanOptionalText(dto.getNotas(), 500, "notas"));
+
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
             log.error("Error al guardar cliente. El campo nombre es requerido");
             logService.error("Error al guardar cliente. El campo nombre es requerido");
@@ -99,6 +115,12 @@ public class ClienteService {
     public ClienteResponseDto update(String clienteId, ClienteRequestDto dto) throws Exception {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new OperationException("Cliente no encontrado con id: " + clienteId));
+
+        dto.setNombre(ValidationUtils.requireText(dto.getNombre(), 160, "nombre"));
+        dto.setTelefono(ValidationUtils.cleanOptionalText(dto.getTelefono(), 30, "telefono"));
+        dto.setEmail(ValidationUtils.cleanOptionalText(dto.getEmail(), 120, "email"));
+        dto.setDocumento(ValidationUtils.cleanOptionalText(dto.getDocumento(), 40, "documento"));
+        dto.setNotas(ValidationUtils.cleanOptionalText(dto.getNotas(), 500, "notas"));
 
         if (dto.getNombre() == null || dto.getNombre().isBlank()) {
             log.error("Error al actualizar cliente. El campo nombre es requerido");
@@ -149,5 +171,13 @@ public class ClienteService {
         return clienteRepository
                 .findAllByOderByDataDesc(pInit, pEnd, page)
                 .map(ClienteResponseDto::new);
+    }
+
+    private Usuario getCurrentUser() {
+        if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
+            return (Usuario) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+        return null;
     }
 }

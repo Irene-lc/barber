@@ -14,6 +14,7 @@ import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.service.EmailService;
 import edu.upb.barber.service.PasswordResetService;
 import edu.upb.barber.service.UsuarioService;
+import edu.upb.barber.service.ValidationUtils;
 
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +68,28 @@ public class AuthController {
             if (data.email() == null || data.email().isBlank()) {
                 return ResponseEntity.badRequest().body(Map.of("message", "El email es requerido."));
             }
-            if (usuarioRepository.findByEmail(data.email().trim()).isPresent()) {
+            if (data.password() == null || data.password().length() < 6) {
+                return ResponseEntity.badRequest().body(Map.of("message", "La contrasena debe tener al menos 6 caracteres."));
+            }
+            if (data.confirmPassword() == null || !data.password().equals(data.confirmPassword())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Las contrasenas no coinciden."));
+            }
+
+            String email = ValidationUtils.requireText(data.email(), 120, "email").toLowerCase();
+            String nombre = ValidationUtils.cleanOptionalText(data.nombre(), 80, "nombre");
+            String apellido = ValidationUtils.cleanOptionalText(data.apellido(), 80, "apellido");
+            String telefono = ValidationUtils.cleanOptionalText(data.telefono(), 30, "telefono");
+            String documento = ValidationUtils.cleanOptionalText(data.documento(), 40, "documento");
+            String notas = ValidationUtils.cleanOptionalText(data.notas(), 500, "notas");
+
+            if (nombre == null || apellido == null || telefono == null || documento == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Nombre, apellido, telefono y documento son requeridos."));
+            }
+            if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                return ResponseEntity.badRequest().body(Map.of("message", "El email no tiene un formato valido."));
+            }
+
+            if (usuarioRepository.findByEmail(email).isPresent()) {
                 return ResponseEntity.badRequest().body(Map.of("message", "Ya existe un usuario con ese email."));
             }
 
@@ -79,14 +101,14 @@ public class AuthController {
 
             // Crear Usuario
             Usuario usuario = Usuario.builder()
-                    .nombre(data.nombre() != null ? data.nombre().trim() : data.email().split("@")[0])
-                    .apellido(data.apellido() != null ? data.apellido().trim() : "")
-                    .email(data.email().trim())
+                    .nombre(nombre != null ? nombre : email.split("@")[0])
+                    .apellido(apellido != null ? apellido : "")
+                    .email(email)
                     .passwordHash(passwordEncoder.encode(data.password()))
                     .rol(RolUsuario.ROLE_CLIENTE)
                     .empresa(empresa)
-                    .telefono(data.telefono())
-                    .documento(data.documento())
+                    .telefono(telefono)
+                    .documento(documento)
                     .activo(true)
                     .build();
 
@@ -95,13 +117,13 @@ public class AuthController {
             // Crear Cliente únicamente si hay una empresa asociada
             if (empresa != null) {
                 Cliente cliente = new Cliente();
-                String nombreCompleto = (data.nombre() != null ? data.nombre().trim() : "") +
-                        (data.apellido() != null && !data.apellido().isBlank() ? " " + data.apellido().trim() : "");
+                String nombreCompleto = (nombre != null ? nombre : "") +
+                        (apellido != null && !apellido.isBlank() ? " " + apellido : "");
                 cliente.setNombre(nombreCompleto.trim());
-                cliente.setEmail(data.email().trim());
-                cliente.setTelefono(data.telefono());
-                cliente.setDocumento(data.documento());
-                cliente.setNotas(data.notas());
+                cliente.setEmail(email);
+                cliente.setTelefono(telefono);
+                cliente.setDocumento(documento);
+                cliente.setNotas(notas);
                 cliente.setUsuario(usuario);
                 cliente.setEmpresa(empresa);
                 cliente.setActivo(true);
@@ -109,7 +131,7 @@ public class AuthController {
                 clienteRepository.save(cliente);
             }
 
-            log.info("Registro exitoso para el email: {}", data.email());
+            log.info("Registro exitoso para el email: {}", email);
             return ResponseEntity.ok(Map.of("message", "Cliente registrado exitosamente."));
         } catch (Exception e) {
             log.error("Error en registro de cliente: ", e);

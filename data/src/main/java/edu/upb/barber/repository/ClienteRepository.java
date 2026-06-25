@@ -30,4 +30,6 @@ public interface ClienteRepository extends JpaRepository<Cliente, String> {
 
     Optional<Cliente> findByUsuarioIdAndEmpresaId(String usuarioId, String empresaId);
 
+    List<Cliente> findByEmpresaId(String empresaId);
+
 }

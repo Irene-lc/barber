@@ -10,6 +10,7 @@ import edu.upb.barber.repository.entity.*;
 import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.repository.entity.enums.RolEmpleadoEvento;
 import edu.upb.barber.repository.entity.enums.TipoEvento;
+import edu.upb.barber.repository.entity.enums.DiaSemana;
 import edu.upb.barber.repository.dto.request.WalkInRequestDto;
 import edu.upb.barber.repository.dto.request.VentaRequestDto;
 import edu.upb.barber.repository.dto.request.VentaDetalleRequestDto;
@@ -19,7 +20,11 @@ import edu.upb.barber.repository.entity.enums.EstadoPago;
 import edu.upb.barber.repository.dto.request.PagoRequestDto;
 import edu.upb.barber.repository.dto.response.VentaResponseDto;
 import edu.upb.barber.service.exception.OperationException;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +54,8 @@ public class AgendaEventoService {
     private final PagoService pagoService;
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
+    private final HorarioEmpleadoRepository horarioEmpleadoRepository;
+    private final HorarioEmpleadoFechaRepository horarioEmpleadoFechaRepository;
 
     @Transactional
     public AgendaEventoCreateResponseDto crear(AgendaEventoCreateRequestDto request) throws Exception {
@@ -99,9 +106,12 @@ public class AgendaEventoService {
                     .orElseThrow(() -> new OperationException("Mascota no encontrada con ID: " + request.getMascotaId()));
         }
 
+        validarClienteYSucursal(cliente, sucursal);
+        validarMascotaYCliente(mascota, cliente);
         validarReglasPorTipo(request);
+        validarDetalles(request.getDetalles(), request.getTipoEvento(), sucursal);
+        validarDuracionEvento(request);
         validarAsignaciones(request.getEmpleados(), request.getSucursalId(), request);
-        validarDetalles(request.getDetalles(), request.getTipoEvento());
 
         AgendaEvento agendaEvento = new AgendaEvento();
         agendaEvento.setSucursal(sucursal);
@@ -111,7 +121,7 @@ public class AgendaEventoService {
         agendaEvento.setEstado(EstadoEvento.PENDIENTE);
         agendaEvento.setInicio(request.getInicio());
         agendaEvento.setFin(request.getFin());
-        agendaEvento.setNotas(request.getNotas());
+        agendaEvento.setNotas(ValidationUtils.cleanOptionalText(request.getNotas(), 1000, "notas"));
 
         agendaEvento = agendaEventoRepository.save(agendaEvento);
 
@@ -121,7 +131,7 @@ public class AgendaEventoService {
                 detalle.setAgendaEvento(agendaEvento);
                 detalle.setDuracionEstimadaMinutos(detalleDto.getDuracionEstimadaMinutos() != null ? detalleDto.getDuracionEstimadaMinutos() : 0);
                 detalle.setPrecioAcordado(detalleDto.getPrecioAcordado());
-                detalle.setNotas(detalleDto.getNotas());
+                detalle.setNotas(ValidationUtils.cleanOptionalText(detalleDto.getNotas(), 500, "notas del detalle"));
 
                 if (detalleDto.getServicioId() != null && !detalleDto.getServicioId().isBlank()) {
                     Servicio servicio = servicioRepository.findById(detalleDto.getServicioId())
@@ -189,6 +199,17 @@ public class AgendaEventoService {
             logService.error("Error en AgendaEvento. inicio debe ser menor que fin");
             throw new OperationException("inicio debe ser menor que fin");
         }
+        if (!request.getInicio().isAfter(OffsetDateTime.now())) {
+            log.error("Error en AgendaEvento. No se puede agendar en fecha u hora pasada");
+            logService.error("Error en AgendaEvento. No se puede agendar en fecha u hora pasada");
+            throw new OperationException("No se puede agendar una cita en una fecha u hora pasada");
+        }
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate fechaInicio = request.getInicio().atZoneSameInstant(zone).toLocalDate();
+        LocalDate fechaFin = request.getFin().atZoneSameInstant(zone).toLocalDate();
+        if (!fechaInicio.equals(fechaFin)) {
+            throw new OperationException("La cita debe iniciar y terminar el mismo dia");
+        }
     }
 
     private void validarReglasPorTipo(AgendaEventoCreateRequestDto request) throws Exception {
@@ -203,17 +224,24 @@ public class AgendaEventoService {
                 logService.error("Error en AgendaEvento. Para tipo CITA, detalles es requerido");
                 throw new OperationException("Para tipo CITA, detalles es requerido");
             }
-        } else if (request.getDetalles() != null && !request.getDetalles().isEmpty()) {
+        } else {
+            if ((request.getTipoEvento() == TipoEvento.BLOQUEO || request.getTipoEvento() == TipoEvento.DESCANSO || request.getTipoEvento() == TipoEvento.CAPACITACION)
+                    && (request.getEmpleados() == null || request.getEmpleados().isEmpty())) {
+                throw new OperationException("Para bloqueos o eventos internos, empleados es requerido");
+            }
+        }
+        if (request.getTipoEvento() != TipoEvento.CITA && request.getDetalles() != null && !request.getDetalles().isEmpty()) {
             log.error("Error en AgendaEvento. detalles solo aplica para tipo CITA");
             logService.error("Error en AgendaEvento. detalles solo aplica para tipo CITA");
             throw new OperationException("detalles solo aplica para tipo CITA");
         }
     }
 
-    private void validarDetalles(List<AgendaEventoDetalleCreateDto> detalles, TipoEvento tipoEvento) throws Exception {
+    private void validarDetalles(List<AgendaEventoDetalleCreateDto> detalles, TipoEvento tipoEvento, Sucursal sucursal) throws Exception {
         if (detalles == null) {
             return;
         }
+        int duracionTotal = 0;
         for (AgendaEventoDetalleCreateDto detalle : detalles) {
             boolean tieneServicio = detalle.getServicioId() != null && !detalle.getServicioId().isBlank();
             boolean tieneCombo = detalle.getComboServicioId() != null && !detalle.getComboServicioId().isBlank();
@@ -225,18 +253,47 @@ public class AgendaEventoService {
                 logService.error("Error en detalle AgendaEvento. Debe tener exactamente uno de: servicio_id, combo_servicio_id o producto_id");
                 throw new OperationException("Cada detalle debe tener exactamente uno de: servicio_id, combo_servicio_id o producto_id");
             }
-            if (!tieneProducto) {
-                if (detalle.getDuracionEstimadaMinutos() == null || detalle.getDuracionEstimadaMinutos() <= 0) {
-                    log.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
-                    logService.error("Error en detalle AgendaEvento. duracion_estimada_minutos debe ser mayor que cero");
-                    throw new OperationException("duracion_estimada_minutos debe ser mayor que cero");
+            if (tieneServicio) {
+                Servicio servicio = servicioRepository.findById(detalle.getServicioId())
+                        .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detalle.getServicioId()));
+                validarEmpresaItem(servicio.getEmpresa(), sucursal, "servicio");
+                if (!servicio.isActivo()) {
+                    throw new OperationException("El servicio seleccionado no esta activo");
                 }
+                detalle.setDuracionEstimadaMinutos(servicio.getDuracionMinutos());
+                detalle.setPrecioAcordado(servicio.getPrecioBase());
+                duracionTotal += servicio.getDuracionMinutos();
+            } else if (tieneCombo) {
+                ComboServicio combo = comboServicioRepository.findById(detalle.getComboServicioId())
+                        .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detalle.getComboServicioId()));
+                validarEmpresaItem(combo.getEmpresa(), sucursal, "combo");
+                if (!combo.isActivo()) {
+                    throw new OperationException("El combo seleccionado no esta activo");
+                }
+                detalle.setDuracionEstimadaMinutos(combo.getDuracionMinutos());
+                detalle.setPrecioAcordado(combo.getPrecio());
+                duracionTotal += combo.getDuracionMinutos();
+            } else {
+                Producto producto = productoRepository.findById(detalle.getProductoId())
+                        .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detalle.getProductoId()));
+                validarEmpresaItem(producto.getEmpresa(), sucursal, "producto");
+                if (!producto.isActivo()) {
+                    throw new OperationException("El producto seleccionado no esta activo");
+                }
+                int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 1;
+                if (cantidad <= 0) {
+                    throw new OperationException("La cantidad del producto debe ser mayor que cero");
+                }
+                detalle.setCantidad(cantidad);
+                detalle.setDuracionEstimadaMinutos(0);
+                detalle.setPrecioAcordado(producto.getPrecioVenta().multiply(BigDecimal.valueOf(cantidad)));
             }
-            if (detalle.getPrecioAcordado() == null || detalle.getPrecioAcordado().compareTo(BigDecimal.ZERO) < 0) {
-                log.error("Error en detalle AgendaEvento. precio_acordado debe ser mayor o igual a cero");
-                logService.error("Error en detalle AgendaEvento. precio_acordado debe ser mayor o igual a cero");
-                throw new OperationException("precio_acordado debe ser mayor o igual a cero");
+            if (detalle.getNotas() != null) {
+                detalle.setNotas(ValidationUtils.cleanOptionalText(detalle.getNotas(), 500, "notas del detalle"));
             }
+        }
+        if (tipoEvento == TipoEvento.CITA && duracionTotal <= 0) {
+            throw new OperationException("La cita debe incluir al menos un servicio o combo con duracion");
         }
     }
 
@@ -277,6 +334,7 @@ public class AgendaEventoService {
                 logService.error("Error en asignacion AgendaEvento. Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
                 throw new OperationException("Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
             }
+            validarHorarioEmpleado(asignacion.getEmpleadoId(), sucursalId, request.getInicio(), request.getFin());
 
             boolean enConflicto = agendaEventoEmpleadoRepository.existsConflictoHorarioEmpleado(
                     asignacion.getEmpleadoId(),
@@ -290,6 +348,88 @@ public class AgendaEventoService {
                 throw new OperationException("Conflicto de horario para empleado: " + asignacion.getEmpleadoId());
             }
         }
+    }
+
+    private void validarClienteYSucursal(Cliente cliente, Sucursal sucursal) throws OperationException {
+        if (cliente != null && cliente.getEmpresa() != null && sucursal.getEmpresa() != null
+                && !cliente.getEmpresa().getId().equals(sucursal.getEmpresa().getId())) {
+            throw new OperationException("El cliente no pertenece a la empresa de la sucursal seleccionada");
+        }
+        if (!sucursal.isActivo()) {
+            throw new OperationException("La sucursal seleccionada no esta activa");
+        }
+    }
+
+    private void validarMascotaYCliente(Mascota mascota, Cliente cliente) throws OperationException {
+        if (mascota == null) {
+            return;
+        }
+        if (!mascota.isActivo()) {
+            throw new OperationException("La mascota seleccionada no esta activa");
+        }
+        if (cliente == null || mascota.getCliente() == null || !mascota.getCliente().getId().equals(cliente.getId())) {
+            throw new OperationException("La mascota seleccionada no pertenece al cliente de la cita");
+        }
+    }
+
+    private void validarEmpresaItem(Empresa empresaItem, Sucursal sucursal, String tipo) throws OperationException {
+        if (empresaItem == null || sucursal.getEmpresa() == null || !empresaItem.getId().equals(sucursal.getEmpresa().getId())) {
+            throw new OperationException("El " + tipo + " seleccionado no pertenece a la empresa de la sucursal");
+        }
+    }
+
+    private void validarDuracionEvento(AgendaEventoCreateRequestDto request) throws OperationException {
+        if (request.getTipoEvento() != TipoEvento.CITA || request.getDetalles() == null) {
+            return;
+        }
+        int duracionDetalles = request.getDetalles().stream()
+                .map(AgendaEventoDetalleCreateDto::getDuracionEstimadaMinutos)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+        long duracionEvento = Duration.between(request.getInicio(), request.getFin()).toMinutes();
+        if (duracionEvento != duracionDetalles) {
+            throw new OperationException("La duracion de la cita no coincide con la duracion real de los servicios");
+        }
+    }
+
+    private void validarHorarioEmpleado(String empleadoId, String sucursalId, OffsetDateTime inicio, OffsetDateTime fin) throws OperationException {
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate fecha = inicio.atZoneSameInstant(zone).toLocalDate();
+        LocalTime horaInicio = inicio.atZoneSameInstant(zone).toLocalTime();
+        LocalTime horaFin = fin.atZoneSameInstant(zone).toLocalTime();
+
+        List<HorarioEmpleadoFecha> horariosFecha = horarioEmpleadoFechaRepository
+                .findByEmpleadoIdAndSucursalIdAndFechaAndActivoTrue(empleadoId, sucursalId, fecha);
+
+        boolean dentroHorario;
+        if (!horariosFecha.isEmpty()) {
+            dentroHorario = horariosFecha.stream()
+                    .anyMatch(h -> !horaInicio.isBefore(h.getHoraInicio()) && !horaFin.isAfter(h.getHoraFin()));
+        } else {
+            DiaSemana dia = mapDiaSemana(inicio.atZoneSameInstant(zone).getDayOfWeek());
+            dentroHorario = horarioEmpleadoRepository
+                    .findByEmpleadoIdAndSucursalIdAndActivoTrue(empleadoId, sucursalId)
+                    .stream()
+                    .filter(h -> h.getDiaSemana() == dia)
+                    .anyMatch(h -> !horaInicio.isBefore(h.getHoraInicio()) && !horaFin.isAfter(h.getHoraFin()));
+        }
+
+        if (!dentroHorario) {
+            throw new OperationException("La cita esta fuera del horario laboral del empleado seleccionado");
+        }
+    }
+
+    private DiaSemana mapDiaSemana(java.time.DayOfWeek dayOfWeek) {
+        return switch (dayOfWeek) {
+            case MONDAY -> DiaSemana.LUNES;
+            case TUESDAY -> DiaSemana.MARTES;
+            case WEDNESDAY -> DiaSemana.MIERCOLES;
+            case THURSDAY -> DiaSemana.JUEVES;
+            case FRIDAY -> DiaSemana.VIERNES;
+            case SATURDAY -> DiaSemana.SABADO;
+            case SUNDAY -> DiaSemana.DOMINGO;
+        };
     }
 
     @Transactional(readOnly = true)
@@ -393,9 +533,12 @@ public class AgendaEventoService {
                     .orElseThrow(() -> new OperationException("Mascota no encontrada con ID: " + request.getMascotaId()));
         }
 
+        validarClienteYSucursal(cliente, sucursal);
+        validarMascotaYCliente(mascota, cliente);
         validarReglasPorTipo(request);
+        validarDetalles(request.getDetalles(), request.getTipoEvento(), sucursal);
+        validarDuracionEvento(request);
         validarAsignacionesParaUpdate(request.getEmpleados(), request.getSucursalId(), request, id);
-        validarDetalles(request.getDetalles(), request.getTipoEvento());
 
         agendaEventoDetalleRepository.deleteByAgendaEventoId(id);
         agendaEventoEmpleadoRepository.deleteByAgendaEventoId(id);
@@ -406,7 +549,7 @@ public class AgendaEventoService {
         agendaEvento.setTipoEvento(request.getTipoEvento());
         agendaEvento.setInicio(request.getInicio());
         agendaEvento.setFin(request.getFin());
-        agendaEvento.setNotas(request.getNotas());
+        agendaEvento.setNotas(ValidationUtils.cleanOptionalText(request.getNotas(), 1000, "notas"));
 
         agendaEvento = agendaEventoRepository.save(agendaEvento);
 
@@ -416,7 +559,7 @@ public class AgendaEventoService {
                 detalle.setAgendaEvento(agendaEvento);
                 detalle.setDuracionEstimadaMinutos(detalleDto.getDuracionEstimadaMinutos() != null ? detalleDto.getDuracionEstimadaMinutos() : 0);
                 detalle.setPrecioAcordado(detalleDto.getPrecioAcordado());
-                detalle.setNotas(detalleDto.getNotas());
+                detalle.setNotas(ValidationUtils.cleanOptionalText(detalleDto.getNotas(), 500, "notas del detalle"));
 
                 if (detalleDto.getServicioId() != null && !detalleDto.getServicioId().isBlank()) {
                     Servicio servicio = servicioRepository.findById(detalleDto.getServicioId())
@@ -474,10 +617,37 @@ public class AgendaEventoService {
     public AgendaEventoResponseDto actualizarEstado(String id, EstadoEvento nuevoEstado) throws Exception {
         AgendaEvento agendaEvento = agendaEventoRepository.findById(id)
                 .orElseThrow(() -> new OperationException("AgendaEvento no encontrado con ID: " + id));
+        validarCambioEstado(agendaEvento, nuevoEstado);
         agendaEvento.setEstado(nuevoEstado);
         agendaEvento = agendaEventoRepository.save(agendaEvento);
         logService.info("Estado de AgendaEvento actualizado a " + nuevoEstado + " para id: " + id);
         return new AgendaEventoResponseDto(agendaEvento);
+    }
+
+    private void validarCambioEstado(AgendaEvento agendaEvento, EstadoEvento nuevoEstado) throws OperationException {
+        if (nuevoEstado == null) {
+            throw new OperationException("nuevoEstado es requerido");
+        }
+        EstadoEvento actual = agendaEvento.getEstado();
+        if (actual == EstadoEvento.FINALIZADO || actual == EstadoEvento.CANCELADO || actual == EstadoEvento.NO_SHOW) {
+            throw new OperationException("No se puede cambiar el estado de una cita en estado final");
+        }
+        if (nuevoEstado == EstadoEvento.PENDIENTE && actual != EstadoEvento.PENDIENTE) {
+            throw new OperationException("No se puede volver una cita a PENDIENTE");
+        }
+        if (nuevoEstado == EstadoEvento.CANCELADO && agendaEvento.getInicio() != null
+                && !agendaEvento.getInicio().isAfter(OffsetDateTime.now())) {
+            throw new OperationException("No se puede cancelar una cita pasada o ya iniciada");
+        }
+        boolean permitido = switch (actual) {
+            case PENDIENTE -> nuevoEstado == EstadoEvento.CONFIRMADO || nuevoEstado == EstadoEvento.CANCELADO || nuevoEstado == EstadoEvento.NO_SHOW;
+            case CONFIRMADO -> nuevoEstado == EstadoEvento.EN_PROCESO || nuevoEstado == EstadoEvento.CANCELADO || nuevoEstado == EstadoEvento.NO_SHOW;
+            case EN_PROCESO -> nuevoEstado == EstadoEvento.FINALIZADO || nuevoEstado == EstadoEvento.NO_SHOW;
+            default -> false;
+        };
+        if (!permitido && actual != nuevoEstado) {
+            throw new OperationException("Transicion de estado no permitida: " + actual + " -> " + nuevoEstado);
+        }
     }
 
     private void validarAsignacionesParaUpdate(
@@ -518,6 +688,7 @@ public class AgendaEventoService {
                 logService.error("Error en asignacion AgendaEvento. Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
                 throw new OperationException("Empleado " + asignacion.getEmpleadoId() + " no pertenece a la sucursal " + sucursalId);
             }
+            validarHorarioEmpleado(asignacion.getEmpleadoId(), sucursalId, request.getInicio(), request.getFin());
 
             boolean enConflicto = agendaEventoEmpleadoRepository.existsConflictoHorarioEmpleadoExcludingEvent(
                     asignacion.getEmpleadoId(),

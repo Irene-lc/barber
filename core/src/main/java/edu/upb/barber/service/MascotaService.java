@@ -8,6 +8,8 @@ import edu.upb.barber.repository.dto.response.MascotaResponseDto;
 import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Mascota;
 import edu.upb.barber.repository.entity.Raza;
+import edu.upb.barber.repository.entity.Usuario;
+import edu.upb.barber.repository.entity.enums.RolUsuario;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +32,22 @@ public class MascotaService {
 
     @Transactional(readOnly = true)
     public List<MascotaResponseDto> listar() {
-        return mascotaRepository.findAll().stream()
+        Usuario currentUser = getCurrentUser();
+        List<Mascota> mascotas;
+        if (currentUser != null && currentUser.getRol() == RolUsuario.ROLE_CLIENTE) {
+            List<String> clienteIds = clienteRepository.findByUsuarioId(currentUser.getId()).stream()
+                    .map(Cliente::getId)
+                    .toList();
+            mascotas = clienteIds.isEmpty() ? List.of() : mascotaRepository.findByClienteIdIn(clienteIds);
+        } else if (currentUser != null && currentUser.getEmpresa() != null) {
+            List<String> clienteIds = clienteRepository.findByEmpresaId(currentUser.getEmpresa().getId()).stream()
+                    .map(Cliente::getId)
+                    .toList();
+            mascotas = clienteIds.isEmpty() ? List.of() : mascotaRepository.findByClienteIdIn(clienteIds);
+        } else {
+            mascotas = mascotaRepository.findAll();
+        }
+        return mascotas.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -43,7 +60,8 @@ public class MascotaService {
 
     @Transactional
     public MascotaResponseDto guardar(MascotaRequestDto dto) throws Exception {
-        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+        String nombre = ValidationUtils.requireText(dto.getNombre(), 120, "nombre");
+        if (nombre == null || nombre.isBlank()) {
             log.error("Error al guardar mascota. El campo nombre es requerido");
             logService.error("Error al guardar mascota. El campo nombre es requerido");
             throw new OperationException("El campo nombre es requerido");
@@ -66,14 +84,14 @@ public class MascotaService {
                 .orElseThrow(() -> new OperationException("Raza no encontrada con id: " + dto.getRazaId()));
 
         Mascota mascota = new Mascota();
-        mascota.setNombre(dto.getNombre());
+        mascota.setNombre(nombre);
         mascota.setCliente(cliente);
         mascota.setRaza(raza);
         if (dto.getActivo() != null) {
             mascota.setActivo(dto.getActivo());
         }
 
-        logService.info("Mascota guardada exitosamente: " + dto.getNombre());
+        logService.info("Mascota guardada exitosamente: " + nombre);
         return mapToResponse(mascotaRepository.save(mascota));
     }
 
@@ -82,13 +100,14 @@ public class MascotaService {
         Mascota mascota = mascotaRepository.findById(mascotaId)
                 .orElseThrow(() -> new OperationException("Mascota no encontrada con id: " + mascotaId));
 
-        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+        String nombre = ValidationUtils.requireText(dto.getNombre(), 120, "nombre");
+        if (nombre == null || nombre.isBlank()) {
             log.error("Error al actualizar mascota. El campo nombre es requerido");
             logService.error("Error al actualizar mascota. El campo nombre es requerido");
             throw new OperationException("El campo nombre es requerido");
         }
 
-        mascota.setNombre(dto.getNombre());
+        mascota.setNombre(nombre);
 
         if (dto.getClienteId() != null && !dto.getClienteId().isBlank()) {
             Cliente cliente = clienteRepository.findById(dto.getClienteId())
@@ -129,5 +148,13 @@ public class MascotaService {
                 .razaId(mascota.getRaza() != null ? mascota.getRaza().getId() : null)
                 .activo(mascota.isActivo())
                 .build();
+    }
+
+    private Usuario getCurrentUser() {
+        if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Usuario) {
+            return (Usuario) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+        return null;
     }
 }

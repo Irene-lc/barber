@@ -7,6 +7,7 @@ public record RegisterRequestDto(
     String apellido,
     String email,
     String password,
+    @JsonProperty("confirm_password") String confirmPassword,
     String telefono,
     String documento,
     @JsonProperty("empresa_id") String empresaId,

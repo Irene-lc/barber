@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface MascotaRepository extends JpaRepository<Mascota, String> {
     Optional<Mascota> findByClienteAndNombre(Cliente cliente, String nombre);
 
+    List<Mascota> findByClienteIdIn(List<String> clienteIds);
+
 }
