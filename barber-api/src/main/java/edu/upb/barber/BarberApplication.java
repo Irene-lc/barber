@@ -21,7 +21,7 @@ import java.util.List;
 @SpringBootApplication
 @EnableAsync
 @EnableScheduling
-@EnableCaching
+//@EnableCaching
 public class BarberApplication{
 
 	@Autowired

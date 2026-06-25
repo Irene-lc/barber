@@ -207,7 +207,7 @@
                                     <outputDirectory>${project.build.directory}/classes/resources/</outputDirectory>
                                     <resources>
                                         <resource>
-                                            <directory>${project.basedir}/../back-office-web/src/main/web/dist/back-office-web</directory>
+                                            <directory>/Users/irenelandivar/Frontend-Barber/dist</directory>
                                         </resource>
                                     </resources>
                                 </configuration>
