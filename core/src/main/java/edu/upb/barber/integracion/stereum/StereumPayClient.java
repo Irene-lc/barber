@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
@@ -57,8 +58,11 @@ public class StereumPayClient {
                     .body(jsonObject.toString())
                     .retrieve()
                     .toEntity(String.class);
+        } catch (HttpStatusCodeException e) {
+            log.error("HTTP error in Stereum createCharge. Status: {}, Body: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw e;
         } catch (Exception e) {
-            log.error("Exception in Stereum createCharge: ", e);
+            log.error("Exception in Stereum createCharge: {} - {}", e.getClass().getName(), e.getMessage(), e);
             throw e;
         }
 
