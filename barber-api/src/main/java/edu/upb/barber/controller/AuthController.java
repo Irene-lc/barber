@@ -55,7 +55,7 @@ public class AuthController {
     private final EmailService emailService;
     private final PasswordResetService passwordResetService;
 
-    @org.springframework.beans.factory.annotation.Value("${app.frontend-url}")
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
 
