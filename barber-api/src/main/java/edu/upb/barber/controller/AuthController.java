@@ -55,8 +55,8 @@ public class AuthController {
     private final EmailService emailService;
     private final PasswordResetService passwordResetService;
 
-    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:5173}")
-    private String frontendUrl;  // injected by @Value, not via constructor
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url}")
+    private String frontendUrl;
 
 
     @PostMapping("/register")
