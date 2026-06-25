@@ -18,9 +18,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class EmailService {
-    private static final String BANNER_PNG = "images/logo_klipp_transparente.png";
-    private static final String LINKEDIN_PNG = "images/linkedin@2x.png";
-    private static final String X_PNG = "images/twitter@2x.png";
 
     @Value("${mail.smtp.from-mail}")
     private String mailFrom;
@@ -44,7 +41,7 @@ public class EmailService {
     ) {
         log.info("Enviando email de confirmacion de cita a: " + to);
         MimeMessagePreparator messagePreparator = mimeMessage -> {
-            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
             messageHelper.setTo(to);
             messageHelper.setFrom(new InternetAddress(mailFrom));
             messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
@@ -61,9 +58,6 @@ public class EmailService {
             );
 
             messageHelper.setText(message, true);
-            messageHelper.addInline("banner", new ClassPathResource(BANNER_PNG));
-            messageHelper.addInline("imageLinkedin", new ClassPathResource(LINKEDIN_PNG));
-            messageHelper.addInline("imageX", new ClassPathResource(X_PNG));
         };
         javaMailSender.send(messagePreparator);
         log.info("Email de confirmacion de cita enviado a: " + to);
@@ -73,7 +67,7 @@ public class EmailService {
     public void sendPassword(String to, String password) {
         log.info("Enviando email a: " + to);
         MimeMessagePreparator messagePreparator = mimeMessage -> {
-            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
             messageHelper.setTo(to);
             messageHelper.setFrom(new InternetAddress(mailFrom));
             messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
@@ -81,9 +75,6 @@ public class EmailService {
             String message = mailContentBuilder.sendPassword(password);
 
             messageHelper.setText(message, true);
-            messageHelper.addInline("banner", new ClassPathResource(BANNER_PNG));
-            messageHelper.addInline("imageLinkedin", new ClassPathResource(LINKEDIN_PNG));
-            messageHelper.addInline("imageX", new ClassPathResource(X_PNG));
         };
         javaMailSender.send(messagePreparator);
         log.info("Email enviado a: " + to);
@@ -105,7 +96,7 @@ public class EmailService {
     public void sendConfirmationEmail(String to, String clienteNombre, String servicioNombre, String empleadoNombre, String citaFecha, String citaHora, String sucursalNombre, String precioTotal) {
         log.info("Enviando email de confirmación de cita a: " + to);
         MimeMessagePreparator messagePreparator = mimeMessage -> {
-            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
             messageHelper.setTo(to);
             messageHelper.setFrom(new InternetAddress(mailFrom));
             messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
@@ -115,9 +106,6 @@ public class EmailService {
             );
 
             messageHelper.setText(message, true);
-            messageHelper.addInline("banner", new ClassPathResource(BANNER_PNG));
-            messageHelper.addInline("imageLinkedin", new ClassPathResource(LINKEDIN_PNG));
-            messageHelper.addInline("imageX", new ClassPathResource(X_PNG));
         };
         javaMailSender.send(messagePreparator);
         log.info("Email de confirmación de cita enviado a: " + to);
