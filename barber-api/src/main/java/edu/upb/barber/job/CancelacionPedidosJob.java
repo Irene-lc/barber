@@ -19,11 +19,13 @@ import java.util.List;
 @Slf4j
 @PersistJobDataAfterExecution
 @DisallowConcurrentExecution
+@Service
 public class CancelacionPedidosJob extends QuartzJobBean implements InterruptableJob {
     public static final String NAME_JOB = "CancelacionPedidosJob";
     private static final String NAME_TRIGGER = "CancelacionPedidosJob-trigger";
-
+    @Autowired
     private VentaRepository ventaRepository;
+    @Autowired
     private EmailService emailService;
 
     @SneakyThrows
@@ -39,6 +41,7 @@ public class CancelacionPedidosJob extends QuartzJobBean implements Interruptabl
             ventaRepository.save(venta);
             emailService.cancelacionPedido(
                     "adriana.bauer11@gmail.com",
+                    "Adriana",
                     "Pregunta 6-A",
                     "Pedido cancelado"
             );

@@ -112,7 +112,7 @@ public class EmailService {
     }
 
     @Async("taskLog")
-    public void cancelacionPedido(String to, String subject, String mensaje) {
+    public void cancelacionPedido(String to, String clienteNombre, String subject, String mensaje) {
         log.info("Enviando email de cancelacion de pedido a: " + to);
         try {
             MimeMessagePreparator messagePreparator = mimeMessage -> {
@@ -121,6 +121,9 @@ public class EmailService {
                 messageHelper.setFrom(new InternetAddress(mailFrom));
                 messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
                 messageHelper.setSubject(subject);
+                String message = mailContentBuilder.cancelarPedido(
+                        clienteNombre,mensaje
+                );
                 messageHelper.setText(mensaje, false);
             };
             javaMailSender.send(messagePreparator);
@@ -129,4 +132,6 @@ public class EmailService {
             log.error("Error al enviar email de cancelacion", e);
         }
     }
+
+
 }
