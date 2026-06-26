@@ -4,7 +4,7 @@ param (
 )
 
 # Llave que Stereum usa para firmar (la corta, que descubrimos antes)
-$secretKey = "b26d932fc95a4b34973d6cf9bbc97ee138853953dddb420eba99bcf320c4261f35def1a3ee9c40e7b7467f2b3da266ef284b3c157ebb4538bf876c8d335cf35a"
+$secretKey = "601d71d4-cf46-44ab-a637-56bf5cc63640"
 
 # Obtener timestamp exacto en UTC (evita bugs de zona horaria de PowerShell)
 $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()

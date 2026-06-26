@@ -22,7 +22,7 @@ import java.time.Instant;
 @RequestMapping("/api/v1/stereum")
 public class StereumController {
 
-    @Value("${stereum.api-secret}")
+    @Value("${stereum.api-key}")
     private String secretKey;
 
     private final PagoService pagoService;
