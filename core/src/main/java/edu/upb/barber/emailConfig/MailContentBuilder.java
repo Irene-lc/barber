@@ -91,4 +91,13 @@ public class MailContentBuilder {
 
         return this.templateEngine.process("citaConfirmada", ctx);
     }
+
+    public String cancelarPedido(String clienteNombre, String mensaje){
+        final Context ctx = new Context();
+        ctx.setVariable("logoUrl",logoUrl);
+        ctx.setVariable("clienteNombre", clienteNombre);
+        ctx.setVariable("mensaje", mensaje);
+
+        return this.templateEngine.process("Pedido cancelado",ctx);
+    }
 }

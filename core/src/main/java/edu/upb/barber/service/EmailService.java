@@ -110,4 +110,23 @@ public class EmailService {
         javaMailSender.send(messagePreparator);
         log.info("Email de confirmación de cita enviado a: " + to);
     }
+
+    @Async("taskLog")
+    public void cancelacionPedido(String to, String subject, String mensaje) {
+        log.info("Enviando email de cancelacion de pedido a: " + to);
+        try {
+            MimeMessagePreparator messagePreparator = mimeMessage -> {
+                MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+                messageHelper.setTo(to);
+                messageHelper.setFrom(new InternetAddress(mailFrom));
+                messageHelper.setReplyTo(new InternetAddress(mailNoreply, mailNoreply));
+                messageHelper.setSubject(subject);
+                messageHelper.setText(mensaje, false);
+            };
+            javaMailSender.send(messagePreparator);
+            log.info("Email de cancelacion enviado a: " + to);
+        } catch (Exception e) {
+            log.error("Error al enviar email de cancelacion", e);
+        }
+    }
 }

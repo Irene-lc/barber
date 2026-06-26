@@ -8,6 +8,7 @@ import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.service.AgendaEventoService;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -138,3 +139,4 @@ public class AgendaEventoController {
         }
     }
 }
+

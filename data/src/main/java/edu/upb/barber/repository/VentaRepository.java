@@ -10,4 +10,5 @@ public interface VentaRepository extends JpaRepository<Venta, String> {
     List<Venta> findByClienteIdIn(List<String> clienteIds);
     List<Venta> findBySucursal_Empresa(Empresa empresa);
     Optional<Venta> findByAgendaEventoId(String agendaEventoId);
+    List<Venta> findByEstadoAndCreatedDateBefore(edu.upb.barber.repository.entity.enums.EstadoVenta estado, java.time.LocalDateTime createdDate);
 }

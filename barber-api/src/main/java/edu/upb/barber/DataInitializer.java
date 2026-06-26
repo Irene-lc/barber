@@ -1,6 +1,7 @@
 package edu.upb.barber;
 
 import edu.upb.barber.job.EmailSenderJob;
+import edu.upb.barber.job.CancelacionPedidosJob;
 import edu.upb.barber.quartz.CronExpressionConstant;
 import edu.upb.barber.quartz.service.JobDto;
 import edu.upb.barber.quartz.service.JobService;
@@ -56,6 +57,11 @@ public class DataInitializer implements CommandLineRunner {
         JobDto jobDto = EmailSenderJob.getJobDto(JobUtil.GROUP_NAME);
         if (!jobService.existJobName(jobDto.getGroupName(), jobDto.getJobName())) {
             jobService.scheduleCronJob(jobDto, new Date(), CronExpressionConstant.CRON_X_3_SEG, null, "Este Job envia correos");
+        }
+
+        JobDto cancelacionJobDto = CancelacionPedidosJob.getJobDto(JobUtil.GROUP_NAME);
+        if (!jobService.existJobName(cancelacionJobDto.getGroupName(), cancelacionJobDto.getJobName())) {
+            jobService.scheduleCronJob(cancelacionJobDto, new Date(), CronExpressionConstant.CRON_START_NOW, null, "Cancela pedidos pagos de mas de 1 minuto");
         }
     }
 

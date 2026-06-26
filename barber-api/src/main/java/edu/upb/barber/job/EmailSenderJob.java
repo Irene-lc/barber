@@ -5,7 +5,6 @@ import edu.upb.barber.quartz.service.JobService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 
@@ -15,11 +14,7 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 public class EmailSenderJob extends QuartzJobBean implements InterruptableJob {
     public static final String NAME_JOB = "EmailSenderJob";
     private static final String NAME_TRIGGER = "EmailSenderJob-trigger";
-
-    @Autowired
     private JobService jobService;
-
-
 
     @SneakyThrows
     @Override
