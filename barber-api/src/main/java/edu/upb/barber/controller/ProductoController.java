@@ -6,6 +6,8 @@ import edu.upb.barber.service.ProductoService;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,11 +24,14 @@ public class ProductoController {
     private final ProductoService productoService;
 
     @GetMapping
-    public ResponseEntity<List<ProductoResponseDto>> listar() {
+    public ResponseEntity<Page<ProductoResponseDto>> listar(
+            @RequestParam(required = false) String nombre,
+            Pageable pageable
+    ) {
         try {
-            return ResponseEntity.ok(productoService.listar());
+            return ResponseEntity.ok(productoService.listarPaginado(nombre, pageable));
         } catch (Exception e) {
-            log.error("Error al listar productos", e);
+            log.error("Error al listar productos con paginación", e);
             return ResponseEntity.internalServerError().build();
         }
     }

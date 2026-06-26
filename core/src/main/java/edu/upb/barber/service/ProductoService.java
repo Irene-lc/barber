@@ -9,6 +9,8 @@ import edu.upb.barber.repository.entity.Producto;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,17 @@ public class ProductoService {
     private final ProductoRepository productoRepository;
     private final EmpresaRepository empresaRepository;
     private final LogService logService;
+
+    @Transactional(readOnly = true)
+    public Page<ProductoResponseDto> listarPaginado(String nombre, Pageable pageable) {
+        Page<Producto> page;
+        if (nombre == null || nombre.isBlank()) {
+            page = productoRepository.findAll(pageable);
+        } else {
+            page = productoRepository.findByNombreContainingIgnoreCase(nombre, pageable);
+        }
+        return page.map(ProductoResponseDto::new);
+    }
 
     @Transactional(readOnly = true)
     public List<ProductoResponseDto> listar() {

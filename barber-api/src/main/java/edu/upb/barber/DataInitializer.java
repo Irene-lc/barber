@@ -1,6 +1,7 @@
 package edu.upb.barber;
 
 import edu.upb.barber.job.EmailSenderJob;
+import edu.upb.barber.job.PedidoCanceladoJob;
 import edu.upb.barber.quartz.CronExpressionConstant;
 import edu.upb.barber.quartz.service.JobDto;
 import edu.upb.barber.quartz.service.JobService;
@@ -57,6 +58,11 @@ public class DataInitializer implements CommandLineRunner {
         if (!jobService.existJobName(jobDto.getGroupName(), jobDto.getJobName())) {
             jobService.scheduleCronJob(jobDto, new Date(), CronExpressionConstant.CRON_X_3_SEG, null, "Este Job envia correos");
         }
+
+        JobDto cancelacionJobDto = PedidoCanceladoJob.getJobDto(JobUtil.GROUP_NAME);
+        if (!jobService.existJobName(cancelacionJobDto.getGroupName(), cancelacionJobDto.getJobName())) {
+            jobService.scheduleCronJob(cancelacionJobDto, new Date(), CronExpressionConstant.CRON_START_NOW, null, "Este Job cancela pedidos vencidos");
+        }
     }
 
     @Transactional
@@ -78,6 +84,14 @@ public class DataInitializer implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.warn("Could not drop unique constraint on usuario_id in cliente table: " + e.getMessage());
+        }
+
+        // Drop check constraint on estado in table venta to allow CANCELADO state
+        try {
+            jdbcTemplate.execute("ALTER TABLE venta DROP CONSTRAINT IF EXISTS venta_estado_check");
+            log.info("se elimino correctamente.");
+        } catch (Exception e) {
+            log.warn("cuidado: " + e.getMessage());
         }
 
         String password = "Abc123**";

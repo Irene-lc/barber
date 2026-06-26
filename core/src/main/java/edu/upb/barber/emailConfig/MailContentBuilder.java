@@ -76,6 +76,12 @@ public class MailContentBuilder {
         return this.templateEngine.process("mailResetPassword", ctx);
     }
 
+    public String buildPedidoCancelado(String mensaje) {
+        final Context ctx = new Context();
+        ctx.setVariable("mensaje", mensaje);
+        return this.templateEngine.process("pedidoCancelado", ctx);
+    }
+
     public String sendConfirmation(String clienteNombre, String servicioNombre, String empleadoNombre, String citaFecha, String citaHora, String sucursalNombre, String precioTotal) {
         final Context ctx = new Context();
         ctx.setVariable("logoUrl", logoUrl);

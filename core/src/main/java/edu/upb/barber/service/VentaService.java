@@ -6,6 +6,7 @@ import edu.upb.barber.repository.dto.request.VentaRequestDto;
 import edu.upb.barber.repository.dto.response.VentaDetalleResponseDto;
 import edu.upb.barber.repository.dto.response.VentaResponseDto;
 import edu.upb.barber.repository.entity.*;
+import edu.upb.barber.repository.entity.enums.EstadoEvento;
 import edu.upb.barber.repository.entity.enums.EstadoVenta;
 import edu.upb.barber.repository.entity.enums.TipoItemVenta;
 import edu.upb.barber.service.exception.OperationException;
@@ -391,6 +392,21 @@ public class VentaService {
         }
         if (detDto.getPrecioUnitario() == null || detDto.getPrecioUnitario().compareTo(BigDecimal.ZERO) < 0) {
             throw new OperationException("El precio unitario debe ser mayor o igual a cero");
+        }
+    }
+
+    @Transactional
+    public void cancelarVentaAutomatica(Venta venta) {
+        venta.setEstado(EstadoVenta.CANCELADO);
+        ventaRepository.save(venta);
+        log.info("Venta cancelada automáticamente.");
+        logService.info("Venta cancelada automáticamente por inactividad de pago.");
+        
+        if (venta.getAgendaEvento() != null) {
+            AgendaEvento evento = venta.getAgendaEvento();
+            evento.setEstado(EstadoEvento.CANCELADO);
+            agendaEventoRepository.save(evento);
+            log.info("Evento de agenda cancelado automáticamente.");
         }
     }
 }
