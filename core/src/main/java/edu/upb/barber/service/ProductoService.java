@@ -3,16 +3,20 @@ package edu.upb.barber.service;
 import edu.upb.barber.repository.EmpresaRepository;
 import edu.upb.barber.repository.ProductoRepository;
 import edu.upb.barber.repository.dto.request.ProductoRequestDto;
+import edu.upb.barber.repository.dto.response.ProductoDtoTest;
 import edu.upb.barber.repository.dto.response.ProductoResponseDto;
 import edu.upb.barber.repository.entity.Empresa;
 import edu.upb.barber.repository.entity.Producto;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,6 +35,15 @@ public class ProductoService {
         return productoRepository.findAll().stream()
                 .map(ProductoResponseDto::new)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductoDtoTest> findAllPag(
+            String pNombre,
+            Pageable page) {
+        return productoRepository
+                .findAllPag(pNombre, page)
+                .map(ProductoDtoTest::new);
     }
 
     @Transactional(readOnly = true)

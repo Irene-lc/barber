@@ -1,16 +1,23 @@
 package edu.upb.barber.controller;
 
 import edu.upb.barber.repository.dto.request.ProductoRequestDto;
+import edu.upb.barber.repository.dto.response.ProductoDtoTest;
 import edu.upb.barber.repository.dto.response.ProductoResponseDto;
 import edu.upb.barber.service.ProductoService;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 
 @Slf4j
@@ -27,6 +34,21 @@ public class ProductoController {
             return ResponseEntity.ok(productoService.listar());
         } catch (Exception e) {
             log.error("Error al listar productos", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @GetMapping("/page")
+    public ResponseEntity<Page<ProductoDtoTest>> listarPag(@RequestParam(value = "page", defaultValue = "0") Integer page,
+                                                           @RequestParam(value = "size", defaultValue = "10") Integer size,
+                                                           @RequestParam(value = "nombre", defaultValue = "") String nombre,
+                                                           @RequestParam(value = "sortBy", defaultValue = "createdDate") String sortBy,
+                                                           @RequestParam(value = "sortDir", defaultValue = "DESC") Sort.Direction sortDir) {
+        try {
+            return ResponseEntity.ok(productoService.findAllPag(nombre,
+                    PageRequest.of(page, size, Sort.by(sortDir, sortBy)))
+            );
+        } catch (Exception e) {
+            log.error("Error al listar productos paginados", e);
             return ResponseEntity.internalServerError().build();
         }
     }

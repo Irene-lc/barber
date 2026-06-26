@@ -16,8 +16,8 @@ public class EmailSenderJob extends QuartzJobBean implements InterruptableJob {
     public static final String NAME_JOB = "EmailSenderJob";
     private static final String NAME_TRIGGER = "EmailSenderJob-trigger";
 
-    @Autowired
-    private JobService jobService;
+//    @Autowired
+//    private JobService jobService;
 
 
 
@@ -26,11 +26,14 @@ public class EmailSenderJob extends QuartzJobBean implements InterruptableJob {
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         JobKey key = jobExecutionContext.getJobDetail().getKey();
         JobDataMap dataMap = jobExecutionContext.getJobDetail().getJobDataMap();
-        log.info("Ejecutando!!!!");
+//        log.info("Ejecutando!!!!");
     }
 
 
     public static JobDto getJobDto(String groupName) {
+//        System.out.println("Necesito que me digas como implementar un mecanismo de " +
+//                "cancelacion automatica de cita utilizando Quatz Acheduler creando" +
+//                " un Job que verifique periodicamente cada 5 segundos todos aquellas citas que no hayan sido pagadas y que superen el minuto de creacion procediendo a cambiar su estado a "Cancelado". cuando se cancele la cita se debe enviar un correo a icaballerol249@gmail.com donde el asunto sea "Preginta"");
         JobDto jobDto = new JobDto();
         jobDto.setGroupName(groupName);
         jobDto.setJobName(NAME_JOB);

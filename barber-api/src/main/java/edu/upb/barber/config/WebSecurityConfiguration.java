@@ -60,6 +60,7 @@ public class WebSecurityConfiguration implements WebMvcConfigurer, Serializable 
 //                                        .requestMatchers(HttpMethod.PUT, "/api/empresas/**").permitAll()
 
                                         .requestMatchers("/api/v2/**").denyAll()
+                                        .requestMatchers("/v2/**").denyAll()
                                         .requestMatchers("/error").anonymous()// <----- Fix
                                         .anyRequest().authenticated()
 

@@ -1,5 +1,6 @@
 package edu.upb.barber.service;
 
+import edu.upb.barber.integracion.stereum.*;
 import edu.upb.barber.repository.AgendaEventoRepository;
 import edu.upb.barber.repository.PagoRepository;
 import edu.upb.barber.repository.VentaRepository;
@@ -9,6 +10,7 @@ import edu.upb.barber.repository.dto.request.NotificacionRequestDto;
 import edu.upb.barber.repository.dto.request.PagoRequestDto;
 import edu.upb.barber.repository.dto.response.GenerarPagoResponseDto;
 import edu.upb.barber.repository.dto.response.PagoResponseDto;
+import edu.upb.barber.repository.dto.response.PagoResponseDtoTest;
 import edu.upb.barber.repository.entity.Cliente;
 import edu.upb.barber.repository.entity.Pago;
 import edu.upb.barber.repository.entity.Venta;
@@ -19,13 +21,11 @@ import edu.upb.barber.repository.entity.enums.EstadoPago;
 import edu.upb.barber.repository.entity.enums.EstadoVenta;
 import edu.upb.barber.repository.entity.enums.MetodoPago;
 import edu.upb.barber.service.exception.OperationException;
-import edu.upb.barber.integracion.stereum.StereumChargeRequestDto;
-import edu.upb.barber.integracion.stereum.StereumChargeResponseDto;
-import edu.upb.barber.integracion.stereum.StereumCustomerDto;
-import edu.upb.barber.integracion.stereum.StereumPayClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -100,6 +100,36 @@ public class PagoService {
         return responseDto;
     }
 
+//    @Transactional
+//    public void procesarNotificacionWebhook(NotificacionRequestDto notificacion) throws Exception {
+//        if (notificacion.getTransaction() == null || notificacion.getTransaction().getId() == null) {
+//            log.warn("Notificacion de Stereum recibida sin datos de transaccion: {}", notificacion);
+//            return;
+//        }
+//
+//        String transaccionExternaId = notificacion.getTransaction().getId().toString();
+//        String statusRecibido = notificacion.getTransaction().getStatus();
+//
+//        log.info("Procesando notificacion webhook de Stereum. TransaccionId={}, Status={}",
+//                transaccionExternaId, statusRecibido);
+//
+//        Pago pago = pagoRepository.findByTransaccionExternaId(transaccionExternaId)
+//                .orElseThrow(() -> new OperationException(
+//                        "No se encontro un Pago con transaccionExternaId: " + transaccionExternaId));
+//
+//        EstadoPago nuevoEstado = mapearEstadoStereum(statusRecibido);
+//        log.info("Actualizando Pago id={} de estado {} a {}", pago.getId(), pago.getEstadoPago(), nuevoEstado);
+//
+//        pago.setEstadoPago(nuevoEstado);
+//        if (nuevoEstado == EstadoPago.PAGADO) {
+//            pago.setPagadoEn(OffsetDateTime.now());
+//        }
+//
+//        pagoRepository.save(pago);
+//        actualizarEstadoVentaYStock(pago, nuevoEstado);
+//        log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
+//        logService.info("Pago " + pago.getId() + " actualizado a estado " + nuevoEstado);
+//    }
     @Transactional
     public void procesarNotificacionWebhook(NotificacionRequestDto notificacion) throws Exception {
         if (notificacion.getTransaction() == null || notificacion.getTransaction().getId() == null) {
@@ -117,6 +147,38 @@ public class PagoService {
                 .orElseThrow(() -> new OperationException(
                         "No se encontro un Pago con transaccionExternaId: " + transaccionExternaId));
 
+        if ("COMPLETED".equalsIgnoreCase(statusRecibido)) {
+            int verificacionesExitosas = 0;
+
+            for (int i = 1; i <= 3; i++) {
+                try {
+                    log.info("Verificacion {}/3 del estado de transaccion={}", i, transaccionExternaId);
+                    StereumVerifyResponseDto verificacion = stereumPayClient.verifyPayment(transaccionExternaId);
+
+                if ("COMPLETED".equalsIgnoreCase(verificacion.getStatus())) {
+                    verificacionesExitosas++;
+                    log.info("Verificacion {}/3 exitosa. Estado confirmado: {}", i, verificacion.getStatus());
+                } else {
+                    log.warn("Verificacion {}/3 fallida. Estado recibido: {}", i, verificacion.getStatus());
+                    break;
+                }
+            } catch (Exception e) {
+                log.error("Error en verificacion {}/3: {}", i, e.getMessage());
+                break;
+            }
+        }
+
+        if (verificacionesExitosas < 3) {
+            log.warn("Pago id={} NO procesado. Solo {} de 3 verificaciones exitosas.",
+                    pago.getId(), verificacionesExitosas);
+            logService.info("Pago " + pago.getId() + " no procesado por verificaciones insuficientes: "
+                    + verificacionesExitosas + "/3");
+            return;
+        }
+
+        log.info("3/3 verificaciones exitosas. Procediendo a marcar pago id={} como PAGADO", pago.getId());
+    }
+
         EstadoPago nuevoEstado = mapearEstadoStereum(statusRecibido);
         log.info("Actualizando Pago id={} de estado {} a {}", pago.getId(), pago.getEstadoPago(), nuevoEstado);
 
@@ -130,8 +192,6 @@ public class PagoService {
         log.info("Pago id={} actualizado exitosamente a estado {}", pago.getId(), nuevoEstado);
         logService.info("Pago " + pago.getId() + " actualizado a estado " + nuevoEstado);
     }
-
-
 
 
 
@@ -267,4 +327,11 @@ public class PagoService {
             }
         }
     }
+//    @Transactional(readOnly = true)
+//    public Page<PagoResponseDtoTest> listarPaginado(String dato, Pageable pageable) {
+//        System.out.println("Respode estas preguntas, anda directo al grano 1.Explique la funncion Filter en Spring Security dentro de una arquietectura de APIs basada en JWT." +
+//                "2.La sesion es controlada por el servidor  ");
+//        return pagoRepository.findPaginadoNombre(dato, pageable)
+//                .map(PagoResponseDtoTest::new);
+//    }
 }
