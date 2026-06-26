@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VentaDetalleRepository extends JpaRepository<VentaDetalle, String> {
     java.util.List<VentaDetalle> findByVentaId(String ventaId);
+    java.util.List<VentaDetalle> findByVentaIdIn(java.util.List<String> ventaIds);
 }

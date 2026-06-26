@@ -9,6 +9,11 @@ import edu.upb.barber.service.AgendaEventoService;
 import edu.upb.barber.service.exception.OperationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +24,8 @@ import java.util.List;
 @Slf4j
 @AllArgsConstructor
 @RestController
+
+
 @RequestMapping("/api/v1/agenda-eventos")
 public class AgendaEventoController {
 
@@ -34,8 +41,59 @@ public class AgendaEventoController {
         }
     }
 
+
+@GetMapping ("/paginadoIdSucursal/{sucursalId}")
+    public ResponseEntity<List<AgendaEventoResponseDto>> listarPorSucursal(@PathVariable String sucursalId) {
+        try {
+            return ResponseEntity.ok(agendaEventoService.listarPorSucursal(sucursalId, PageRequest.of(0, 10)));
+        } catch (Exception e) {
+            log.error("Error al listar AgendaEventos por Sucursal", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
+    @GetMapping("/paginado")
+    public ResponseEntity<Page<AgendaEventoResponseDto>> listarPaginado(
+            @RequestParam(value = "page", defaultValue = "0") Integer page,
+            @RequestParam(value = "size", defaultValue = "10") Integer size,
+            @RequestParam(value = "sortBy", defaultValue = "createdDate") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "DESC") Sort.Direction sortDir
+    ) {
+        try {
+            return ResponseEntity.ok(agendaEventoService.listarPaginado(
+                    PageRequest.of(page, size, Sort.by(sortDir, sortBy))
+            ));
+        } catch (Exception e) {
+            log.error("Error al listar AgendaEventos paginados", e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
+    @PostMapping("/evento-por-idsucursal-paginado/{sucursalId}")
+    public ResponseEntity<@Nullable Object> listarPorSucursalPaginado(
+            @PathVariable String sucursalId,
+            @RequestParam(value = "page", defaultValue = "0") Integer page,
+            @RequestParam(value = "size", defaultValue = "10") Integer size,
+            @RequestParam(value = "sortBy", defaultValue = "createdDate") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "DESC") Sort.Direction sortDir
+    ) {
+        try {
+            return ResponseEntity.ok(agendaEventoService.listarPorSucursalPaginado(
+                    sucursalId,
+                    PageRequest.of(page, size, Sort.by(sortDir, sortBy))
+            ));
+        } catch (Exception e) {
+            log.error("Error al listar AgendaEventos por Sucursal paginados", e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @GetMapping("/{id}")
+
     public ResponseEntity<AgendaEventoResponseDto> obtenerPorId(@PathVariable String id) {
+
         try {
             return agendaEventoService.findById(id)
                     .map(ResponseEntity::ok)

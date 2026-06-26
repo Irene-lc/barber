@@ -15,9 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -70,6 +68,16 @@ public class VentaService {
         BigDecimal subtotalCalculado = BigDecimal.ZERO;
 
         if (request.getDetalles() != null) {
+            Map<String, Empleado> empleadosPorId = cargarEmpleados(request.getDetalles());
+            Map<String, Servicio> serviciosPorId = cargarServicios(request.getDetalles());
+            Map<String, Producto> productosPorId = cargarProductos(request.getDetalles());
+            Map<String, ComboServicio> combosPorId = cargarCombos(request.getDetalles());
+            Map<String, InventarioSucursal> inventarioPorProductoId = venta.getEstado() == EstadoVenta.COBRADA
+                    ? cargarInventarioPorProducto(productosPorId.keySet(), sucursal.getId())
+                    : Map.of();
+            List<VentaDetalle> detallesNuevos = new ArrayList<>();
+            Set<InventarioSucursal> inventariosModificados = new LinkedHashSet<>();
+
             for (VentaDetalleRequestDto detDto : request.getDetalles()) {
                 validarDetalle(detDto);
 
@@ -89,37 +97,33 @@ public class VentaService {
                 detalle.setNotas(detDto.getNotas());
 
                 if (detDto.getEmpleadoId() != null && !detDto.getEmpleadoId().isBlank()) {
-                    Empleado empleado = empleadoRepository.findById(detDto.getEmpleadoId())
-                            .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + detDto.getEmpleadoId()));
+                    Empleado empleado = obtenerRequerido(empleadosPorId, detDto.getEmpleadoId(), "Empleado");
                     detalle.setEmpleado(empleado);
                 }
 
                 if (detDto.getTipoItem() == TipoItemVenta.SERVICIO) {
-                    Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                            .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detDto.getServicioId()));
+                    Servicio servicio = obtenerRequerido(serviciosPorId, detDto.getServicioId(), "Servicio");
                     detalle.setServicio(servicio);
                 } else if (detDto.getTipoItem() == TipoItemVenta.PRODUCTO) {
-                    Producto producto = productoRepository.findById(detDto.getProductoId())
-                            .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
+                    Producto producto = obtenerRequerido(productosPorId, detDto.getProductoId(), "Producto");
                     detalle.setProducto(producto);
 
                     if (venta.getEstado() == EstadoVenta.COBRADA) {
-                        Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                                .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
-                        if (invOpt.isPresent()) {
-                            InventarioSucursal inv = invOpt.get();
+                        InventarioSucursal inv = inventarioPorProductoId.get(producto.getId());
+                        if (inv != null) {
                             inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
-                            inventarioSucursalRepository.save(inv);
+                            inventariosModificados.add(inv);
                         }
                     }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
-                    ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
-                            .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detDto.getComboServicioId()));
+                    ComboServicio combo = obtenerRequerido(combosPorId, detDto.getComboServicioId(), "Combo");
                     detalle.setComboServicio(combo);
                 }
 
-                ventaDetalleRepository.save(detalle);
+                detallesNuevos.add(detalle);
             }
+            ventaDetalleRepository.saveAll(detallesNuevos);
+            inventarioSucursalRepository.saveAll(inventariosModificados);
         }
 
         if (request.getSubtotal() == null || request.getSubtotal().compareTo(BigDecimal.ZERO) == 0) {
@@ -158,8 +162,18 @@ public class VentaService {
             ventas = ventaRepository.findAll();
         }
 
+        if (ventas.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> ventaIds = ventas.stream().map(Venta::getId).toList();
+        Map<String, List<VentaDetalle>> detallesPorVenta = ventaDetalleRepository
+                .findByVentaIdIn(ventaIds)
+                .stream()
+                .collect(Collectors.groupingBy(detalle -> detalle.getVenta().getId()));
+
         return ventas.stream()
-                .map(this::mapToResponse)
+                .map(venta -> mapToResponse(venta, detallesPorVenta.get(venta.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -172,7 +186,12 @@ public class VentaService {
     private VentaResponseDto mapToResponse(Venta venta) {
         VentaResponseDto res = new VentaResponseDto(venta);
         List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(venta.getId());
-        res.setDetalles(detalles.stream()
+        return mapToResponse(venta, detalles);
+    }
+
+    private VentaResponseDto mapToResponse(Venta venta, List<VentaDetalle> detalles) {
+        VentaResponseDto res = new VentaResponseDto(venta);
+        res.setDetalles(Optional.ofNullable(detalles).orElseGet(List::of).stream()
                 .map(VentaDetalleResponseDto::new)
                 .collect(Collectors.toList()));
         return res;
@@ -202,17 +221,18 @@ public class VentaService {
 
         List<VentaDetalle> detallesAnteriores = ventaDetalleRepository.findByVentaId(id);
         if (venta.getEstado() == EstadoVenta.COBRADA) {
+            Map<String, InventarioSucursal> inventarioPorProductoId = cargarInventarioPorProducto(detallesAnteriores, venta.getSucursal().getId());
+            Set<InventarioSucursal> inventariosModificados = new LinkedHashSet<>();
             for (VentaDetalle det : detallesAnteriores) {
                 if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
-                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                            .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
-                    if (invOpt.isPresent()) {
-                        InventarioSucursal inv = invOpt.get();
+                    InventarioSucursal inv = inventarioPorProductoId.get(det.getProducto().getId());
+                    if (inv != null) {
                         inv.setStockActual(inv.getStockActual() + det.getCantidad());
-                        inventarioSucursalRepository.save(inv);
+                        inventariosModificados.add(inv);
                     }
                 }
             }
+            inventarioSucursalRepository.saveAll(inventariosModificados);
         }
         ventaDetalleRepository.deleteAll(detallesAnteriores);
 
@@ -229,6 +249,16 @@ public class VentaService {
         BigDecimal subtotalCalculado = BigDecimal.ZERO;
 
         if (request.getDetalles() != null) {
+            Map<String, Empleado> empleadosPorId = cargarEmpleados(request.getDetalles());
+            Map<String, Servicio> serviciosPorId = cargarServicios(request.getDetalles());
+            Map<String, Producto> productosPorId = cargarProductos(request.getDetalles());
+            Map<String, ComboServicio> combosPorId = cargarCombos(request.getDetalles());
+            Map<String, InventarioSucursal> inventarioPorProductoId = venta.getEstado() == EstadoVenta.COBRADA
+                    ? cargarInventarioPorProducto(productosPorId.keySet(), sucursal.getId())
+                    : Map.of();
+            List<VentaDetalle> detallesNuevos = new ArrayList<>();
+            Set<InventarioSucursal> inventariosModificados = new LinkedHashSet<>();
+
             for (VentaDetalleRequestDto detDto : request.getDetalles()) {
                 validarDetalle(detDto);
 
@@ -248,37 +278,33 @@ public class VentaService {
                 detalle.setNotas(detDto.getNotas());
 
                 if (detDto.getEmpleadoId() != null && !detDto.getEmpleadoId().isBlank()) {
-                    Empleado empleado = empleadoRepository.findById(detDto.getEmpleadoId())
-                            .orElseThrow(() -> new OperationException("Empleado no encontrado con ID: " + detDto.getEmpleadoId()));
+                    Empleado empleado = obtenerRequerido(empleadosPorId, detDto.getEmpleadoId(), "Empleado");
                     detalle.setEmpleado(empleado);
                 }
 
                 if (detDto.getTipoItem() == TipoItemVenta.SERVICIO) {
-                    Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                            .orElseThrow(() -> new OperationException("Servicio no encontrado con ID: " + detDto.getServicioId()));
+                    Servicio servicio = obtenerRequerido(serviciosPorId, detDto.getServicioId(), "Servicio");
                     detalle.setServicio(servicio);
                 } else if (detDto.getTipoItem() == TipoItemVenta.PRODUCTO) {
-                    Producto producto = productoRepository.findById(detDto.getProductoId())
-                            .orElseThrow(() -> new OperationException("Producto no encontrado con ID: " + detDto.getProductoId()));
+                    Producto producto = obtenerRequerido(productosPorId, detDto.getProductoId(), "Producto");
                     detalle.setProducto(producto);
 
                     if (venta.getEstado() == EstadoVenta.COBRADA) {
-                        Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                                .findByProductoIdAndSucursalId(producto.getId(), sucursal.getId());
-                        if (invOpt.isPresent()) {
-                            InventarioSucursal inv = invOpt.get();
+                        InventarioSucursal inv = inventarioPorProductoId.get(producto.getId());
+                        if (inv != null) {
                             inv.setStockActual(Math.max(0, inv.getStockActual() - detDto.getCantidad()));
-                            inventarioSucursalRepository.save(inv);
+                            inventariosModificados.add(inv);
                         }
                     }
                 } else if (detDto.getTipoItem() == TipoItemVenta.COMBO) {
-                    ComboServicio combo = comboServicioRepository.findById(detDto.getComboServicioId())
-                            .orElseThrow(() -> new OperationException("Combo no encontrado con ID: " + detDto.getComboServicioId()));
+                    ComboServicio combo = obtenerRequerido(combosPorId, detDto.getComboServicioId(), "Combo");
                     detalle.setComboServicio(combo);
                 }
 
-                ventaDetalleRepository.save(detalle);
+                detallesNuevos.add(detalle);
             }
+            ventaDetalleRepository.saveAll(detallesNuevos);
+            inventarioSucursalRepository.saveAll(inventariosModificados);
         }
 
         if (request.getSubtotal() == null || request.getSubtotal().compareTo(BigDecimal.ZERO) == 0) {
@@ -300,17 +326,18 @@ public class VentaService {
 
         List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(id);
         if (venta.getEstado() == EstadoVenta.COBRADA) {
+            Map<String, InventarioSucursal> inventarioPorProductoId = cargarInventarioPorProducto(detalles, venta.getSucursal().getId());
+            Set<InventarioSucursal> inventariosModificados = new LinkedHashSet<>();
             for (VentaDetalle det : detalles) {
                 if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
-                    Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                            .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
-                    if (invOpt.isPresent()) {
-                        InventarioSucursal inv = invOpt.get();
+                    InventarioSucursal inv = inventarioPorProductoId.get(det.getProducto().getId());
+                    if (inv != null) {
                         inv.setStockActual(inv.getStockActual() + det.getCantidad());
-                        inventarioSucursalRepository.save(inv);
+                        inventariosModificados.add(inv);
                     }
                 }
             }
+            inventarioSucursalRepository.saveAll(inventariosModificados);
         }
 
         ventaDetalleRepository.deleteAll(detalles);
@@ -322,38 +349,118 @@ public class VentaService {
     public void descontarStockVenta(Venta venta) {
         if (venta == null) return;
         List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(venta.getId());
+        Map<String, InventarioSucursal> inventarioPorProductoId = cargarInventarioPorProducto(detalles, venta.getSucursal().getId());
+        Set<InventarioSucursal> inventariosModificados = new LinkedHashSet<>();
         for (VentaDetalle det : detalles) {
             if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
-                Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                        .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
-                if (invOpt.isPresent()) {
-                    InventarioSucursal inv = invOpt.get();
+                InventarioSucursal inv = inventarioPorProductoId.get(det.getProducto().getId());
+                if (inv != null) {
                     inv.setStockActual(Math.max(0, inv.getStockActual() - det.getCantidad()));
-                    inventarioSucursalRepository.save(inv);
+                    inventariosModificados.add(inv);
                     log.info("Stock descontado para producto: {}, sucursal: {}, cantidad: {}",
                             det.getProducto().getId(), venta.getSucursal().getId(), det.getCantidad());
                 }
             }
         }
+        inventarioSucursalRepository.saveAll(inventariosModificados);
     }
 
     @Transactional
     public void restaurarStockVenta(Venta venta) {
         if (venta == null) return;
         List<VentaDetalle> detalles = ventaDetalleRepository.findByVentaId(venta.getId());
+        Map<String, InventarioSucursal> inventarioPorProductoId = cargarInventarioPorProducto(detalles, venta.getSucursal().getId());
+        Set<InventarioSucursal> inventariosModificados = new LinkedHashSet<>();
         for (VentaDetalle det : detalles) {
             if (det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null) {
-                Optional<InventarioSucursal> invOpt = inventarioSucursalRepository
-                        .findByProductoIdAndSucursalId(det.getProducto().getId(), venta.getSucursal().getId());
-                if (invOpt.isPresent()) {
-                    InventarioSucursal inv = invOpt.get();
+                InventarioSucursal inv = inventarioPorProductoId.get(det.getProducto().getId());
+                if (inv != null) {
                     inv.setStockActual(inv.getStockActual() + det.getCantidad());
-                    inventarioSucursalRepository.save(inv);
+                    inventariosModificados.add(inv);
                     log.info("Stock restaurado para producto: {}, sucursal: {}, cantidad: {}",
                             det.getProducto().getId(), venta.getSucursal().getId(), det.getCantidad());
                 }
             }
         }
+        inventarioSucursalRepository.saveAll(inventariosModificados);
+    }
+
+    private Map<String, Empleado> cargarEmpleados(List<VentaDetalleRequestDto> detalles) {
+        List<String> ids = detalles.stream()
+                .filter(Objects::nonNull)
+                .map(VentaDetalleRequestDto::getEmpleadoId)
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) return Map.of();
+        return empleadoRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Empleado::getId, empleado -> empleado));
+    }
+
+    private Map<String, Servicio> cargarServicios(List<VentaDetalleRequestDto> detalles) {
+        List<String> ids = detalles.stream()
+                .filter(Objects::nonNull)
+                .filter(det -> det.getTipoItem() == TipoItemVenta.SERVICIO)
+                .map(VentaDetalleRequestDto::getServicioId)
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) return Map.of();
+        return servicioRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Servicio::getId, servicio -> servicio));
+    }
+
+    private Map<String, Producto> cargarProductos(List<VentaDetalleRequestDto> detalles) {
+        List<String> ids = detalles.stream()
+                .filter(Objects::nonNull)
+                .filter(det -> det.getTipoItem() == TipoItemVenta.PRODUCTO)
+                .map(VentaDetalleRequestDto::getProductoId)
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) return Map.of();
+        return productoRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Producto::getId, producto -> producto));
+    }
+
+    private Map<String, ComboServicio> cargarCombos(List<VentaDetalleRequestDto> detalles) {
+        List<String> ids = detalles.stream()
+                .filter(Objects::nonNull)
+                .filter(det -> det.getTipoItem() == TipoItemVenta.COMBO)
+                .map(VentaDetalleRequestDto::getComboServicioId)
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) return Map.of();
+        return comboServicioRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(ComboServicio::getId, combo -> combo));
+    }
+
+    private Map<String, InventarioSucursal> cargarInventarioPorProducto(Collection<String> productoIds, String sucursalId) {
+        List<String> ids = productoIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) return Map.of();
+        return inventarioSucursalRepository.findByProductoIdInAndSucursalId(ids, sucursalId).stream()
+                .collect(Collectors.toMap(inv -> inv.getProducto().getId(), inv -> inv));
+    }
+
+    private Map<String, InventarioSucursal> cargarInventarioPorProducto(List<VentaDetalle> detalles, String sucursalId) {
+        List<String> productoIds = detalles.stream()
+                .filter(det -> det.getTipoItem() == TipoItemVenta.PRODUCTO && det.getProducto() != null)
+                .map(det -> det.getProducto().getId())
+                .distinct()
+                .toList();
+        return cargarInventarioPorProducto(productoIds, sucursalId);
+    }
+
+    private <T> T obtenerRequerido(Map<String, T> entidadesPorId, String id, String nombreEntidad) throws OperationException {
+        T entidad = entidadesPorId.get(id);
+        if (entidad == null) {
+            throw new OperationException(nombreEntidad + " no encontrado con ID: " + id);
+        }
+        return entidad;
     }
 
     private void validarDetalle(VentaDetalleRequestDto detDto) throws OperationException {

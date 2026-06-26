@@ -27,6 +27,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -173,6 +179,9 @@ public class AgendaEventoService {
         response.setEstado(agendaEvento.getEstado());
         return response;
     }
+
+
+
 
     private void validarRequestBase(AgendaEventoCreateRequestDto request) throws Exception {
         if (request == null) {
@@ -456,32 +465,47 @@ public class AgendaEventoService {
             eventos = agendaEventoRepository.findAll();
         }
 
-        return eventos.stream()
-                .map(ae -> {
-                    AgendaEventoResponseDto dto = new AgendaEventoResponseDto(ae);
-                    List<AgendaEventoResponseDto.DetalleDto> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(ae.getId()).stream()
-                            .map(this::mapDetalleToDto) //
-                                    /* d.getServicio() != null ? d.getServicio().getId() : null,
-                                    d.getServicio() != null ? d.getServicio().getNombre() : "Combo",
-                                    d.getPrecioAcordado() != null ? d.getPrecioAcordado().doubleValue() : 0.0,
-                                    d.getDuracionEstimadaMinutos()
-                            */
-                            .toList();
-                    dto.setDetalles(detalles);
-
-                    List<AgendaEventoResponseDto.EmpleadoDto> empleados = agendaEventoEmpleadoRepository.findByAgendaEventoId(ae.getId()).stream()
-                            .map(e -> new AgendaEventoResponseDto.EmpleadoDto(
-                                    e.getEmpleado().getId(),
-                                    e.getEmpleado().getNombre(),
-                                    e.getRolEnEvento() != null ? e.getRolEnEvento().name() : null
-                            ))
-                            .toList();
-                    dto.setEmpleados(empleados);
-
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return mapEventosToResponse(eventos);
     }
+
+    @Transactional(readOnly = true)
+    public Page<AgendaEventoResponseDto> listarPaginado(Pageable pageable) {
+        edu.upb.barber.repository.entity.Usuario currentUser = null;
+        if (org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null &&
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof edu.upb.barber.repository.entity.Usuario) {
+            currentUser = (edu.upb.barber.repository.entity.Usuario) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        }
+
+        Page<AgendaEvento> eventos;
+        if (currentUser != null && currentUser.getRol() == edu.upb.barber.repository.entity.enums.RolUsuario.ROLE_CLIENTE) {
+            List<String> clienteIds = clienteRepository.findByUsuarioId(currentUser.getId()).stream()
+                    .map(Cliente::getId)
+                    .toList();
+            if (clienteIds.isEmpty()) {
+                return new PageImpl<>(List.of(), pageable, 0);
+            }
+            eventos = agendaEventoRepository.findByClienteIdIn(clienteIds, pageable);
+        } else if (currentUser != null && currentUser.getEmpresa() != null) {
+            eventos = agendaEventoRepository.findBySucursal_Empresa(currentUser.getEmpresa(), pageable);
+        } else {
+            eventos = agendaEventoRepository.findAll(pageable);
+        }
+
+        return new PageImpl<>(mapEventosToResponse(eventos.getContent()), pageable, eventos.getTotalElements());
+    }
+
+
+
+@Transactional(readOnly = true)
+    public List<AgendaEventoResponseDto> listarPorSucursal(String sucursalId,Pageable pageable) {
+      
+        Page<AgendaEvento> eventos = agendaEventoRepository.findBySucursalId(sucursalId, pageable);
+        return mapEventosToResponse(eventos.getContent());
+
+}
+
+
+   
 
     @Transactional(readOnly = true)
     public Optional<AgendaEventoResponseDto> findById(String id) {
@@ -510,6 +534,35 @@ public class AgendaEventoService {
                     return dto;
                 });
     }
+
+ @ Transactional(readOnly = true)
+    public Optional<AgendaEventoResponseDto> findByIdSucursalPaginado(String id, Pageable pageable){
+        
+        return agendaEventoRepository.findById(id)
+                .map(ae -> {
+                    AgendaEventoResponseDto dto = new AgendaEventoResponseDto(ae);
+                    List<AgendaEventoResponseDto.DetalleDto> detalles = agendaEventoDetalleRepository.findByAgendaEventoId(ae.getId()).stream()
+                            .map(this::mapDetalleToDto)
+                            .toList();
+                    dto.setDetalles(detalles);
+
+                    List<AgendaEventoResponseDto.EmpleadoDto> empleados = agendaEventoEmpleadoRepository.findByAgendaEventoId(ae.getId()).stream()
+                            .map(e -> new AgendaEventoResponseDto.EmpleadoDto(
+                                    e.getEmpleado().getId(),
+                                    e.getEmpleado().getNombre(),
+                                    e.getRolEnEvento() != null ? e.getRolEnEvento().name() : null
+                            ))
+                            .toList();
+                    dto.setEmpleados(empleados);
+
+                    return dto;
+                });
+    }
+    
+
+
+
+    
 
     @Transactional
     public AgendaEventoCreateResponseDto update(String id, AgendaEventoCreateRequestDto request) throws Exception {
@@ -899,6 +952,45 @@ public class AgendaEventoService {
         );
     }
 
+    private AgendaEventoResponseDto mapToResponse(
+            AgendaEvento agendaEvento,
+            List<AgendaEventoDetalle> detalles,
+            List<AgendaEventoEmpleado> empleados
+    ) {
+        AgendaEventoResponseDto dto = new AgendaEventoResponseDto(agendaEvento);
+        dto.setDetalles(Optional.ofNullable(detalles).orElseGet(List::of).stream()
+                .map(this::mapDetalleToDto)
+                .toList());
+        dto.setEmpleados(Optional.ofNullable(empleados).orElseGet(List::of).stream()
+                .map(e -> new AgendaEventoResponseDto.EmpleadoDto(
+                        e.getEmpleado().getId(),
+                        e.getEmpleado().getNombre(),
+                        e.getRolEnEvento() != null ? e.getRolEnEvento().name() : null
+                ))
+                .toList());
+        return dto;
+    }
+
+    private List<AgendaEventoResponseDto> mapEventosToResponse(List<AgendaEvento> eventos) {
+        if (eventos == null || eventos.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> eventoIds = eventos.stream().map(AgendaEvento::getId).toList();
+        Map<String, List<AgendaEventoDetalle>> detallesPorEvento = agendaEventoDetalleRepository
+                .findByAgendaEventoIdIn(eventoIds)
+                .stream()
+                .collect(Collectors.groupingBy(d -> d.getAgendaEvento().getId()));
+        Map<String, List<AgendaEventoEmpleado>> empleadosPorEvento = agendaEventoEmpleadoRepository
+                .findByAgendaEventoIdIn(eventoIds)
+                .stream()
+                .collect(Collectors.groupingBy(e -> e.getAgendaEvento().getId()));
+
+        return eventos.stream()
+                .map(ae -> mapToResponse(ae, detallesPorEvento.get(ae.getId()), empleadosPorEvento.get(ae.getId())))
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public List<Map<String, String>> obtenerIntervalosOcupados(String empleadoId, java.time.LocalDate fecha) {
         java.time.OffsetDateTime inicioDia = fecha.atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime();
@@ -919,6 +1011,13 @@ public class AgendaEventoService {
             }
         }
         return ocupados;
+    }
+
+    public @Nullable Object listarPorSucursalPaginado(String sucursalId, PageRequest of) {
+        
+        Page<AgendaEvento> eventos = agendaEventoRepository.findBySucursalId(sucursalId, of);
+        List<AgendaEventoResponseDto> content = mapEventosToResponse(eventos.getContent());
+        return new PageImpl<>(content, of, eventos.getTotalElements());
     }
 
 }

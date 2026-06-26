@@ -147,20 +147,26 @@ public class AuthController {
 
 
         try {
+            if (data == null || data.username() == null || data.username().isBlank()
+                    || data.password() == null || data.password().isBlank()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Email y contrasena son requeridos."));
+            }
             OKAuthDto token = auth(data);
             return ok(token);
         } catch (BadCredentialsException e) {
-            log.error("Error BadCredentialsException al autenticar", e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Error al autenticar");
+            log.warn("Credenciales invalidas al autenticar: {}", data != null ? data.username() : null);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Email o contrasena son incorrectos."));
         } catch (Exception e) {
-            log.error("Error al autentificar el usuario: {}", data.nombre(), e);
+            log.error("Error al autentificar el usuario: {}", data != null ? data.username() : null, e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Error al autenticar");
         }
     }
 
 
     public OKAuthDto auth(AuthenticationDto data)  {
-        String username = data.nombre();
+        String username = data.username();
         log.info("Getting Stereum Session for username: {}", username);
         Usuario user;
         try {

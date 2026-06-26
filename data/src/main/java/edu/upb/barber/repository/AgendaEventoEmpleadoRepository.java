@@ -48,4 +48,6 @@ public interface AgendaEventoEmpleadoRepository extends JpaRepository<AgendaEven
     void deleteByAgendaEventoId(String agendaEventoId);
 
     List<AgendaEventoEmpleado> findByAgendaEventoId(String agendaEventoId);
+
+    List<AgendaEventoEmpleado> findByAgendaEventoIdIn(List<String> agendaEventoIds);
 }

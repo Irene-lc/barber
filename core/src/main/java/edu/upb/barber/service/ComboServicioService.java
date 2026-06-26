@@ -18,8 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,8 +34,19 @@ public class ComboServicioService {
 
     @Transactional(readOnly = true)
     public List<ComboServicioResponseDto> listar() {
-        return comboServicioRepository.findAll().stream()
-                .map(this::mapToResponse)
+        List<ComboServicio> combos = comboServicioRepository.findAll();
+        if (combos.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> comboIds = combos.stream().map(ComboServicio::getId).toList();
+        Map<String, List<ComboServicioDetalle>> detallesPorCombo = comboServicioDetalleRepository
+                .findByComboServicioIdIn(comboIds)
+                .stream()
+                .collect(Collectors.groupingBy(detalle -> detalle.getComboServicio().getId()));
+
+        return combos.stream()
+                .map(combo -> mapToResponse(combo, detallesPorCombo.get(combo.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -87,16 +97,18 @@ public class ComboServicioService {
         combo = comboServicioRepository.save(combo);
 
         if (dto.getDetalles() != null) {
+            Map<String, Servicio> serviciosPorId = cargarServicios(dto.getDetalles());
+            List<ComboServicioDetalle> detalles = new ArrayList<>();
             for (ComboServicioDetalleRequestDto detDto : dto.getDetalles()) {
-                Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                        .orElseThrow(() -> new OperationException("Servicio no encontrado con id: " + detDto.getServicioId()));
+                Servicio servicio = obtenerServicio(serviciosPorId, detDto.getServicioId());
 
                 ComboServicioDetalle detalle = new ComboServicioDetalle();
                 detalle.setComboServicio(combo);
                 detalle.setServicio(servicio);
                 detalle.setOrdenEjecucion(detDto.getOrdenEjecucion());
-                comboServicioDetalleRepository.save(detalle);
+                detalles.add(detalle);
             }
+            comboServicioDetalleRepository.saveAll(detalles);
         }
 
         logService.info("ComboServicio guardado exitosamente: " + dto.getNombre());
@@ -139,16 +151,18 @@ public class ComboServicioService {
         if (dto.getDetalles() != null) {
             comboServicioDetalleRepository.deleteByComboServicioId(comboId);
 
+            Map<String, Servicio> serviciosPorId = cargarServicios(dto.getDetalles());
+            List<ComboServicioDetalle> detalles = new ArrayList<>();
             for (ComboServicioDetalleRequestDto detDto : dto.getDetalles()) {
-                Servicio servicio = servicioRepository.findById(detDto.getServicioId())
-                        .orElseThrow(() -> new OperationException("Servicio no encontrado con id: " + detDto.getServicioId()));
+                Servicio servicio = obtenerServicio(serviciosPorId, detDto.getServicioId());
 
                 ComboServicioDetalle detalle = new ComboServicioDetalle();
                 detalle.setComboServicio(combo);
                 detalle.setServicio(servicio);
                 detalle.setOrdenEjecucion(detDto.getOrdenEjecucion());
-                comboServicioDetalleRepository.save(detalle);
+                detalles.add(detalle);
             }
+            comboServicioDetalleRepository.saveAll(detalles);
         }
 
         logService.info("ComboServicio actualizado exitosamente: " + comboId);
@@ -167,10 +181,35 @@ public class ComboServicioService {
         logService.info("ComboServicio eliminado exitosamente: " + id);
     }
 
+    private Map<String, Servicio> cargarServicios(List<ComboServicioDetalleRequestDto> detalles) {
+        List<String> ids = detalles.stream()
+                .filter(Objects::nonNull)
+                .map(ComboServicioDetalleRequestDto::getServicioId)
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) return Map.of();
+        return servicioRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Servicio::getId, servicio -> servicio));
+    }
+
+    private Servicio obtenerServicio(Map<String, Servicio> serviciosPorId, String servicioId) throws OperationException {
+        Servicio servicio = serviciosPorId.get(servicioId);
+        if (servicio == null) {
+            throw new OperationException("Servicio no encontrado con id: " + servicioId);
+        }
+        return servicio;
+    }
+
     private ComboServicioResponseDto mapToResponse(ComboServicio combo) {
         ComboServicioResponseDto res = new ComboServicioResponseDto(combo);
         List<ComboServicioDetalle> detalles = comboServicioDetalleRepository.findByComboServicioId(combo.getId());
-        res.setDetalles(detalles.stream()
+        return mapToResponse(combo, detalles);
+    }
+
+    private ComboServicioResponseDto mapToResponse(ComboServicio combo, List<ComboServicioDetalle> detalles) {
+        ComboServicioResponseDto res = new ComboServicioResponseDto(combo);
+        res.setDetalles(Optional.ofNullable(detalles).orElseGet(List::of).stream()
                 .map(ComboServicioDetalleResponseDto::new)
                 .collect(Collectors.toList()));
         return res;
